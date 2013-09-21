@@ -7,6 +7,7 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
             <DockPanel Grid.Row="0">
                 <Menu DockPanel.Dock="Top">
@@ -47,6 +48,13 @@
                         <Canvas x:Name="canvas" MouseDown="canvas_MouseDown" PreviewMouseMove="canvas_PreviewMouseMove"/>
                     </Border>
                 </Grid>
+            </Grid>
+            <Grid Grid.Row="2">
+                <StatusBar>
+                    <DockPanel>
+                        <Label x:Name="lbHint" DockPanel.Dock="Left"/>
+                    </DockPanel>
+                </StatusBar>
             </Grid>
         </Grid>
     </Grid>

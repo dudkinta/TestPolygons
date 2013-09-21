@@ -10,15 +10,17 @@ namespace TestPolygons
     {
         public static int lastPoint = -1; // последняя точка незаконченного полигона
         public static int firstPoint = -1; // первая точка незаконченного полигона
+        public static int counter;
         public static Dictionary<int, Line> currentPolygon = new Dictionary<int, Line>();
-        public static List<Vector> points = new List<Vector>();
+        public static Dictionary<int, Vector> points = new Dictionary<int, Vector>();
         public static Ellipse singlePoint = new Ellipse(); // для рисования начальной точки полигона
         public static List<Polygon> polygons = new List<Polygon>();
 
         public static List<UIElement> AddPoint(Vector p)
         {
+            counter++;
             List<UIElement> res = new List<UIElement>();
-            points.Add(p);
+            points.Add(counter, p);
             if ((currentPolygon.Count == 0) && (lastPoint == -1))
             {
                 singlePoint = getEllipse(p, 2);
@@ -28,22 +30,25 @@ namespace TestPolygons
             {
                 Line line = getLine(points[lastPoint], p);
                 res.Add(line);
-                line.Tag = points.Count - 2;
-                currentPolygon.Add(points.Count - 1, line);
+                line.Tag = counter - 1;
+                currentPolygon.Add(counter, line);
             }
-            else { firstPoint = points.Count - 1; }
-            lastPoint = points.Count - 1;
+            else { firstPoint = counter; }
+            lastPoint = counter;
             return res;
         }
 
         public static Polygon AddPolygon(Dictionary<int, Line> lines)
         {
+            Line line = getLine(points[lastPoint], points[firstPoint]);
+            lastPoint = -1;
+            currentPolygon.Add(lastPoint, line);
             Polygon res = new Polygon();
             List<int> indexs = new List<int>();
-            foreach(KeyValuePair<int, Line> line in lines)
+            foreach(KeyValuePair<int, Line> ln in lines)
             {
-                res.Points.Add(new Point(line.Value.X1,line.Value.Y1));
-                indexs.Add(line.Key);
+                res.Points.Add(new Point(ln.Value.X1,ln.Value.Y1));
+                indexs.Add(ln.Key);
             }
             SolidColorBrush mySolidColorBrush = new SolidColorBrush();
             mySolidColorBrush.Color = Color.FromArgb(200, 127, 127, 127);
@@ -52,18 +57,19 @@ namespace TestPolygons
             res.StrokeThickness = 2;
             res.Tag = indexs;
             firstPoint = -1;
+            polygons.Add(res);
+            currentPolygon.Clear();
             return res;
         }
         
         public static int getIndexPoint(Vector p)
         {
             int res = -1;
-            for (int i = 0; i < points.Count; i++)
+            foreach (KeyValuePair<int,Vector> point in points)
             {
-                Vector testPoint = points[i];
-                if (((testPoint.x - p.x < 5) && (testPoint.x - p.x > -5)) && ((testPoint.y- p.y < 5) && (testPoint.y - p.y > -5)))
+                if (((point.Value.x - p.x < 5) && (point.Value.x - p.x > -5)) && ((point.Value.y- p.y < 5) && (point.Value.y - p.y > -5)))
                 {
-                    return i;
+                    return point.Key;
                 }
             }
             return res;
@@ -193,21 +199,7 @@ namespace TestPolygons
                             indexs.Remove(j);
                         }
                     }
-                }
-                else // удаление точки и замена полигона двумя линиями
-                {
-                    for (int j = 0; j < polygon.Points.Count; j++)
-                    {
-                        List<int> indexs = (List<int>)polygon.Tag;
-                        if ((polygon.Points[j].X == points[removeIndex].x) && (polygon.Points[j].Y == points[removeIndex].y))
-                        {
-
-                        }
-                        else
-                        {
-                            //currentPolygon.Add(indexs[j], 
-                        }
-                    }
+                    points.Remove(removeIndex);
                 }
             }
         }

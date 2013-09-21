@@ -30,6 +30,7 @@ namespace TestPolygons
             InitializeComponent();
             prepareCanvas();
             prepareToolPanel();
+            lbHint.Content = "Добро пожаловать в программу рисования полигонов";
         }
 
         private void prepareToolPanel() // подготовка панели инструментов
@@ -115,13 +116,7 @@ namespace TestPolygons
             {
                 if (Elements.currentPolygon.Count >= 2)
                 {
-                    Line line = Elements.getLine(Elements.points[Elements.lastPoint], Elements.points[Elements.firstPoint]);
-                    Elements.lastPoint = -1;
-                    Elements.currentPolygon.Add(Elements.points.Count, line);
                     Polygon polygon = Elements.AddPolygon(Elements.currentPolygon);
-                    Elements.polygons.Add(polygon);
-                    Elements.currentPolygon.Clear();
-                    canvas.Children.Add(line);
                     canvas.Children.Add(polygon);
                     refreshCanvas();
                 }
@@ -135,7 +130,7 @@ namespace TestPolygons
                         Elements.RemovePoint(indexMovePoint);
                         refreshCanvas();
                     }
-                }  // надо сообщение о невозможности удалить пока полигон строится
+                }
             }
         }
 
@@ -155,28 +150,28 @@ namespace TestPolygons
                     canvas.Children.Add(currentPoint);
                     btnToolArrow.IsChecked = true;
                     btnToolArrow_Click(null, null);
+                    lbHint.Content = "Левой кнопкой мыши можно передвигать точку. Del или BackSpace удаляет точку если полигон построен и имеет более 3-х точек";
                 }
                 else
                 {
                     canvas.Children.Remove(currentPoint);
                     btnToolPoly.IsChecked = true;
                     btnToolPoly_Click(null, null);
+                    lbHint.Content = "Левой кнопкой мыши можно поставить точку";
                 }
-
             }
             else
             {
                 if (indexMovePoint != -1)
                 {
                     // проверка от совпадения точек
-                    for (int i = 0; i < Elements.points.Count; i++)
+                    foreach (KeyValuePair<int, Vector> point in Elements.points)
                     {
-                        if ((p.x == Elements.points[i].x) && (p.y == Elements.points[i].y) && (i != indexMovePoint))
+                        if ((p.x == point.Value.x) && (p.y == point.Value.y) && (point.Key != indexMovePoint))
                         {
                             p.x = p.x + 2;
                         }
                     }
-
                     // передвижение отдельной точки
                     currentPoint.Margin = new Thickness(p.x - (currentPoint.StrokeThickness + 0.5), p.y - (currentPoint.StrokeThickness + 0.5), 0, 0);
                     Elements.singlePoint.Margin = new Thickness(p.x - (Elements.singlePoint.StrokeThickness + 0.5), p.y - (Elements.singlePoint.StrokeThickness + 0.5), 0, 0);
@@ -195,7 +190,6 @@ namespace TestPolygons
                             line.Value.Y1 = p.y;
                         }
                     }
-
                     // передвижение точки полигона
                     for (int i = 0; i < Elements.polygons.Count; i++)
                     {
