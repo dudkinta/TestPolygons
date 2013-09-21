@@ -10,13 +10,13 @@ namespace TestPolygons
     {
         public static int lastPoint = -1; // последняя точка незаконченного полигона
         public static int firstPoint = -1; // первая точка незаконченного полигона
-        public static int counter;
-        public static Dictionary<int, Line> currentPolygon = new Dictionary<int, Line>();
-        public static Dictionary<int, Vector> points = new Dictionary<int, Vector>();
+        public static int counter; // идентификатор точки
+        public static Dictionary<int, Line> currentPolygon = new Dictionary<int, Line>(); // недостроенный полигон
+        public static Dictionary<int, Vector> points = new Dictionary<int, Vector>(); // коллекция точек
         public static Ellipse singlePoint = new Ellipse(); // для рисования начальной точки полигона
-        public static List<Polygon> polygons = new List<Polygon>();
+        public static List<Polygon> polygons = new List<Polygon>();  // коллекция полигонов
 
-        public static List<UIElement> AddPoint(Vector p)
+        public static List<UIElement> addPoint(Vector p) // добавление новой точки
         {
             counter++;
             List<UIElement> res = new List<UIElement>();
@@ -38,7 +38,7 @@ namespace TestPolygons
             return res;
         }
 
-        public static Polygon AddPolygon(Dictionary<int, Line> lines)
+        public static Polygon addPolygon(Dictionary<int, Line> lines) // постройка нового полигона
         {
             Line line = getLine(points[lastPoint], points[firstPoint]);
             lastPoint = -1;
@@ -62,7 +62,7 @@ namespace TestPolygons
             return res;
         }
         
-        public static int getIndexPoint(Vector p)
+        public static int getIndexPoint(Vector p) // поиск индекса точки
         {
             int res = -1;
             foreach (KeyValuePair<int,Vector> point in points)
@@ -75,7 +75,79 @@ namespace TestPolygons
             return res;
         }
 
-        public static bool isCrossLines(Line l1, Line l2)
+        public static Line getLine(double x1, double y1, double x2, double y2) //создание линии по 2-м точкам заданными координатами
+        {
+            Line res = new Line();
+            res.X1 = x1;
+            res.X2 = x2;
+            res.Y1 = y1;
+            res.Y2 = y2;
+            res.Stroke = System.Windows.Media.Brushes.Black;
+            res.StrokeThickness = 2;
+            return res;
+        }
+
+        public static Line getLine(Vector p1, Vector p2) //сохдание линии по 2-м точкам заданными векторами
+        {
+            return getLine(p1.x, p1.y, p2.x, p2.y);
+        }
+
+        public static Ellipse getEllipse(double x, double y, int thickness) //создание эллипса по координатам
+        {
+            Ellipse res = new Ellipse();
+            res.Width = thickness * 2 + 1;
+            res.Height = thickness * 2 + 1;
+            res.Stroke = System.Windows.Media.Brushes.Black;
+            res.StrokeThickness = thickness;
+            res.Margin = new Thickness(x - (thickness + 0.5), y - (thickness + 0.5), 0, 0);
+            return res;
+        }
+
+        public static Ellipse getEllipse(Vector p) // создание эллипса по вектору со стандартной толщиной (для начальной точки)
+        {
+            return getEllipse(p.x, p.y, 2);
+        }
+
+        public static Ellipse getEllipse(Vector p, int thickness) // создание эллипса по вектору с нестандартной толщиной (для выбраной точки)
+        {
+            return getEllipse(p.x, p.y, thickness);
+        }
+        
+        public static void removePoint(int removeIndex) // удаление точки из полигона
+        {
+            for (int i = 0; i < polygons.Count; i++)
+            {
+                Polygon polygon = polygons[i];
+                if (polygon.Points.Count > 3)  // удаление точки и перестройка полигона
+                {
+                    for (int j = 0; j < polygon.Points.Count; j++)
+                    {
+                        if ((polygon.Points[j].X == points[removeIndex].x) && (polygon.Points[j].Y == points[removeIndex].y))
+                        {
+                            polygon.Points.RemoveAt(j);
+                            List<int> indexs = (List<int>)polygon.Tag;
+                            indexs.Remove(j);
+                        }
+                    }
+                    points.Remove(removeIndex);
+                }
+            }
+        }
+
+        public static double getLenght(Vector a, Vector b, Vector c) // вычисление расстояние от точки до отрезка
+        {
+            //a - начало отрезка
+            //б - конец отрезка 
+            //с - точка
+            double p = (c - a) * (b - a);
+            double r = (b - a) * (b - a);
+            if (0 >= p) { return (c - a).Lenght; }
+            if (p >= r) { return (c - b).Lenght; }
+            if ((0 < p) && (p < r)) { return (c - a - p / r * (b - a)).Lenght; }
+            return double.MaxValue;
+        }
+
+        public static bool isCrossLines(Line l1, Line l2) // проверка пересечения линий
         {
             // Ax + By + C = 0   - уравнение прямой
             double a1 = l1.Y2 - l1.Y1;
@@ -143,65 +215,6 @@ namespace TestPolygons
                 else { return false; }
             }
             #endregion
-        }
-
-        public static Line getLine(double x1, double y1, double x2, double y2)
-        {
-            Line res = new Line();
-            res.X1 = x1;
-            res.X2 = x2;
-            res.Y1 = y1;
-            res.Y2 = y2;
-            res.Stroke = System.Windows.Media.Brushes.Black;
-            res.StrokeThickness = 2;
-            return res;
-        }
-
-        public static Ellipse getEllipse(double x, double y, int Thickness)
-        {
-            Ellipse res = new Ellipse();
-            res.Width = Thickness * 2 + 1;
-            res.Height = Thickness * 2 + 1;
-            res.Stroke = System.Windows.Media.Brushes.Black;
-            res.StrokeThickness = Thickness;
-            res.Margin = new Thickness(x - (Thickness + 0.5), y - (Thickness + 0.5), 0, 0);
-            return res;
-        }
-
-        public static Ellipse getEllipse(Vector p)
-        {
-            return getEllipse(p.x, p.y, 2);
-        }
-
-        public static Ellipse getEllipse(Vector p, int Thickness)
-        {
-            return getEllipse(p.x, p.y, Thickness);
-        }
-        
-        public static Line getLine(Vector p1, Vector p2)
-        {
-            return getLine(p1.x, p1.y, p2.x, p2.y);
-        }
-
-        public static void RemovePoint(int removeIndex)
-        {
-            for (int i = 0; i < polygons.Count; i++)
-            {
-                Polygon polygon = polygons[i];
-                if (polygon.Points.Count > 3)  // удаление точки и перестройка полигона
-                {
-                    for (int j = 0; j < polygon.Points.Count; j++)
-                    {
-                        if ((polygon.Points[j].X == points[removeIndex].x) && (polygon.Points[j].Y == points[removeIndex].y))
-                        {
-                            polygon.Points.RemoveAt(j);
-                            List<int> indexs = (List<int>)polygon.Tag;
-                            indexs.Remove(j);
-                        }
-                    }
-                    points.Remove(removeIndex);
-                }
-            }
-        }
+        } 
     }
 }

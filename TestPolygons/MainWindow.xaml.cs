@@ -22,8 +22,8 @@ namespace TestPolygons
     /// </summary>
     public partial class fmMain : Window
     {
-        private int indexMovePoint;
-        private Ellipse currentPoint = new Ellipse();
+        private int indexMovePoint; // индекс выбраной точки
+        private Ellipse currentPoint = new Ellipse();  // маркер выбраной точки
 
         public fmMain()
         {
@@ -31,7 +31,7 @@ namespace TestPolygons
             prepareCanvas();
             prepareToolPanel();
             lbHint.Content = "Добро пожаловать в программу рисования полигонов";
-        }
+        }  // инициализация
 
         private void prepareToolPanel() // подготовка панели инструментов
         {
@@ -57,7 +57,7 @@ namespace TestPolygons
             Vector p = new Vector(Mouse.GetPosition(canvas));
             if (Tools.type == Tools.ToolType.polygon)
             {
-                List<UIElement> elements = Elements.AddPoint(p);
+                List<UIElement> elements = Elements.addPoint(p);
                 if (elements.Count != 0)
                 {
                     for (int i = 0; i < elements.Count; i++) { canvas.Children.Add(elements[i]); }
@@ -112,32 +112,33 @@ namespace TestPolygons
 
         private void fmWPFMain_PreviewKeyDown(object sender, KeyEventArgs e) // обработка команды от клавиатуры
         {
-            if (e.Key == Key.Enter)
+            if (e.Key == Key.Enter) // строим полигон
             {
                 if (Elements.currentPolygon.Count >= 2)
                 {
-                    Polygon polygon = Elements.AddPolygon(Elements.currentPolygon);
+                    Polygon polygon = Elements.addPolygon(Elements.currentPolygon);
                     canvas.Children.Add(polygon);
                     refreshCanvas();
                 }
             }
-            if ((e.Key == Key.Delete) || (e.Key == Key.Back))
+            if ((e.Key == Key.Delete) || (e.Key == Key.Back))  // удаляем точки
             {
                 if (Elements.currentPolygon.Count == 0)  // при недостроенном полигоне нельзя удалять точки
                 {
                     if (indexMovePoint != -1)
                     {
-                        Elements.RemovePoint(indexMovePoint);
+                        Elements.removePoint(indexMovePoint);
                         refreshCanvas();
                     }
                 }
             }
         }
 
-        private void canvas_PreviewMouseMove(object sender, MouseEventArgs e)  // обработка передвижения точек
+        private void canvas_PreviewMouseMove(object sender, MouseEventArgs e)  // обработка команд от мыши
         {
             Vector p = new Vector(Mouse.GetPosition(canvas));
-            if (e.LeftButton != MouseButtonState.Pressed)
+            #region Выбор точки
+            if ((e.LeftButton != MouseButtonState.Pressed)&&(e.RightButton != MouseButtonState.Pressed))
             {
                 if (indexMovePoint != -1)
                 {
@@ -157,10 +158,12 @@ namespace TestPolygons
                     canvas.Children.Remove(currentPoint);
                     btnToolPoly.IsChecked = true;
                     btnToolPoly_Click(null, null);
-                    lbHint.Content = "Левой кнопкой мыши можно поставить точку";
+                    lbHint.Content = "Левой кнопкой мыши можно поставить точку. Правой кнопкой добавить точку к ближайшему полигону";
                 }
             }
-            else
+            #endregion
+            #region Удаление точки
+            if ((e.LeftButton == MouseButtonState.Pressed) && (e.RightButton != MouseButtonState.Pressed))
             {
                 if (indexMovePoint != -1)
                 {
@@ -204,6 +207,16 @@ namespace TestPolygons
                     Elements.points[indexMovePoint] = p;
                 }
             }
+            #endregion
+            #region Добавление точки
+            if ((e.LeftButton != MouseButtonState.Pressed) && (e.RightButton == MouseButtonState.Pressed))  
+            {
+                if (indexMovePoint == -1)  // ненадо добавлять новую точку на существующую точку
+                {
+                    
+                }
+            }
+            #endregion
         } 
     }
 }
