@@ -54,15 +54,29 @@ namespace TestPolygons
         private void canvas_MouseDown(object sender, MouseButtonEventArgs e) // нажатие по канве
         {
             canvas.Focus();
-            Vector p = new Vector(Mouse.GetPosition(canvas));
-            if (Tools.type == Tools.ToolType.polygon)
+            #region Добавление точки к полигону
+            if ((e.LeftButton != MouseButtonState.Pressed) && (e.RightButton == MouseButtonState.Pressed))
             {
-                List<UIElement> elements = Elements.addPoint(p);
-                if (elements.Count != 0)
+                if (indexMovePoint == -1)  // ненадо добавлять новую точку на существующую точку
                 {
-                    for (int i = 0; i < elements.Count; i++) { canvas.Children.Add(elements[i]); }
+
                 }
             }
+            #endregion
+            #region Добавление точки к недостроееному полигону
+            if ((e.LeftButton == MouseButtonState.Pressed) && (e.RightButton != MouseButtonState.Pressed))
+            {
+                if (Tools.type == Tools.ToolType.polygon)
+                {
+                    Elements.currentLine = Elements.decLenght(Elements.currentLine, 0.1);
+                    List<UIElement> elements = Elements.addPoint(new Vector(Elements.currentLine.X2, Elements.currentLine.Y2));
+                    if (elements.Count != 0)  // добавление новых элементов после установки точки
+                    {
+                        for (int i = 0; i < elements.Count; i++) { canvas.Children.Add(elements[i]); }
+                    }
+                }
+            }
+            #endregion
             refreshCanvas();
         }
 
@@ -79,6 +93,7 @@ namespace TestPolygons
                 canvas.Children.Add(Elements.currentPolygon.ElementAt(i).Value);
             }
             canvas.Children.Add(Elements.singlePoint);
+            canvas.Children.Add(Elements.currentLine);
         } 
 
         private void fmWPFMain_SizeChanged(object sender, SizeChangedEventArgs e) // изменение размеров окна 
@@ -137,9 +152,18 @@ namespace TestPolygons
         private void canvas_PreviewMouseMove(object sender, MouseEventArgs e)  // обработка команд от мыши
         {
             Vector p = new Vector(Mouse.GetPosition(canvas));
+            Elements.currentLine.X2 = p.x;  // без этих двух строк курсорная линия моргает. 
+            Elements.currentLine.Y2 = p.y;  // а почему непонятно :(   мне кажется логично было бы наоборот
+            Vector p1 = Elements.checkCurrentPolygon(p, Elements.currentLine);  // проверка пересечения курсорной линии с недостроенным полигоном
+            Elements.currentLine.X2 = p1.x;
+            Elements.currentLine.Y2 = p1.y;
             #region Выбор точки
             if ((e.LeftButton != MouseButtonState.Pressed)&&(e.RightButton != MouseButtonState.Pressed))
             {
+                if (Elements.firstPoint != -1)
+                {
+                    Elements.currentLine.StrokeThickness = 1;
+                }
                 if (indexMovePoint != -1)
                 {
                     canvas.Children.Remove(currentPoint);
@@ -162,38 +186,87 @@ namespace TestPolygons
                 }
             }
             #endregion
-            #region Удаление точки
+            #region Передвижение точки
             if ((e.LeftButton == MouseButtonState.Pressed) && (e.RightButton != MouseButtonState.Pressed))
             {
+                Elements.currentLine.StrokeThickness = 0; // делаем курсорную линию невидимой что бы не мешалась
                 if (indexMovePoint != -1)
                 {
-                    // проверка от совпадения точек
+                    #region Проверка от совпадения точек а то без этого полигон может сломаться :(
                     foreach (KeyValuePair<int, Vector> point in Elements.points)
                     {
-                        if ((p.x == point.Value.x) && (p.y == point.Value.y) && (point.Key != indexMovePoint))
+                        if ((p1.x == point.Value.x) && (p1.y == point.Value.y) && (point.Key != indexMovePoint))
                         {
-                            p.x = p.x + 2;
+                            p1.x = p1.x + 2;
                         }
                     }
-                    // передвижение отдельной точки
-                    currentPoint.Margin = new Thickness(p.x - (currentPoint.StrokeThickness + 0.5), p.y - (currentPoint.StrokeThickness + 0.5), 0, 0);
-                    Elements.singlePoint.Margin = new Thickness(p.x - (Elements.singlePoint.StrokeThickness + 0.5), p.y - (Elements.singlePoint.StrokeThickness + 0.5), 0, 0);
-                    // передвижение точки недостроенного полигона
+                    #endregion
+                    #region Передвигаем начальную точку курсорной линии
+                    if (indexMovePoint == Elements.lastPoint) 
+                    {
+                        Elements.currentLine.X1 = p1.x;
+                        Elements.currentLine.Y1 = p1.y;
+                    }
+                    #endregion
+                    #region Двигаем отдельную точку (ее видно только когда полигон не содердит линий)
+                    currentPoint.Margin = new Thickness(p1.x - (currentPoint.StrokeThickness + 0.5), p1.y - (currentPoint.StrokeThickness + 0.5), 0, 0);
+                    Elements.singlePoint.Margin = new Thickness(p1.x - (Elements.singlePoint.StrokeThickness + 0.5), p1.y - (Elements.singlePoint.StrokeThickness + 0.5), 0, 0);
+                    Elements.points[indexMovePoint] = p1; 
+                    #endregion
+                    #region Двигаем точку недостроенного полигона
+                    List<int> moveLines = new List<int>();
+                    List<int> notMoveLines = new List<int>();
                     foreach (KeyValuePair<int, Line> line in Elements.currentPolygon)
                     {
+                        int tagPoint = (int)line.Value.Tag;
+                        if ((line.Key == indexMovePoint) || (tagPoint == indexMovePoint))
+                        {
+                            moveLines.Add(line.Key);
+                        }
+                        else
+                        {
+                            notMoveLines.Add(line.Key);
+                        }
                         if (line.Key == indexMovePoint)
                         {
                             line.Value.X2 = p.x;
                             line.Value.Y2 = p.y;
                         }
-                        int tagPoint = (int)line.Value.Tag;
+                        
                         if (tagPoint == indexMovePoint)
                         {
                             line.Value.X1 = p.x;
                             line.Value.Y1 = p.y;
                         }
                     }
-                    // передвижение точки полигона
+                    if (Elements.currentPolygon.Count > 2)
+                    {
+                        for (int i = 0; i < moveLines.Count; i++)
+                        {
+                            for (int j = 0; j < notMoveLines.Count; j++)
+                            {
+                                int crossFlag = -2;
+                                p1 = Elements.getCrossPoint(Elements.currentPolygon[moveLines[i]], Elements.currentPolygon[notMoveLines[j]], out crossFlag);
+                                if (crossFlag == 2)
+                                {
+                                    int tagPoint = (int)Elements.currentPolygon[moveLines[i]].Tag;
+                                    if (tagPoint == indexMovePoint)
+                                    {
+                                        Elements.currentPolygon[moveLines[i]].X1 = p1.x;
+                                        Elements.currentPolygon[moveLines[i]].Y1 = p1.y;
+                                    }
+                                    else
+                                    {
+                                        Elements.currentPolygon[moveLines[i]].X2 = p1.x;
+                                        Elements.currentPolygon[moveLines[i]].Y2 = p1.y;
+                                    }
+                                    Elements.points[indexMovePoint] = p1;
+                                }
+                            }
+                        }
+                    }
+                    #endregion
+                    #region Двигаем точку построенного полигона
                     for (int i = 0; i < Elements.polygons.Count; i++)
                     {
                         for (int j = 0; j < Elements.polygons[i].Points.Count; j++)
@@ -204,17 +277,10 @@ namespace TestPolygons
                             }
                         }
                     }
-                    Elements.points[indexMovePoint] = p;
-                }
-            }
-            #endregion
-            #region Добавление точки
-            if ((e.LeftButton != MouseButtonState.Pressed) && (e.RightButton == MouseButtonState.Pressed))  
-            {
-                if (indexMovePoint == -1)  // ненадо добавлять новую точку на существующую точку
-                {
+                    #endregion
                     
                 }
+                refreshCanvas();
             }
             #endregion
         } 

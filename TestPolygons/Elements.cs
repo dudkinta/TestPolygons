@@ -14,6 +14,7 @@ namespace TestPolygons
         public static Dictionary<int, Line> currentPolygon = new Dictionary<int, Line>(); // недостроенный полигон
         public static Dictionary<int, Vector> points = new Dictionary<int, Vector>(); // коллекция точек
         public static Ellipse singlePoint = new Ellipse(); // для рисования начальной точки полигона
+        public static Line currentLine = new Line();
         public static List<Polygon> polygons = new List<Polygon>();  // коллекция полигонов
 
         public static List<UIElement> addPoint(Vector p) // добавление новой точки
@@ -24,14 +25,21 @@ namespace TestPolygons
             if ((currentPolygon.Count == 0) && (lastPoint == -1))
             {
                 singlePoint = getEllipse(p, 2);
+                currentLine = getLine(p, p);
+                currentLine.StrokeThickness = 1;
             }
-            else { singlePoint = new Ellipse(); }
+            else 
+            { 
+                singlePoint = new Ellipse();
+            }
             if (lastPoint != -1)
             {
                 Line line = getLine(points[lastPoint], p);
                 res.Add(line);
                 line.Tag = counter - 1;
                 currentPolygon.Add(counter, line);
+                currentLine.X1 = p.x;
+                currentLine.Y1 = p.y;
             }
             else { firstPoint = counter; }
             lastPoint = counter;
@@ -59,6 +67,7 @@ namespace TestPolygons
             firstPoint = -1;
             polygons.Add(res);
             currentPolygon.Clear();
+            currentLine.StrokeThickness = 0;
             return res;
         }
         
@@ -147,74 +156,84 @@ namespace TestPolygons
             return double.MaxValue;
         }
 
-        public static bool isCrossLines(Line l1, Line l2) // проверка пересечения линий
+        public static Vector checkCurrentPolygon(Vector res, Line testLine)
         {
-            // Ax + By + C = 0   - уравнение прямой
-            double a1 = l1.Y2 - l1.Y1;
-            double a2 = l2.Y2 - l2.Y1;
-            double b1 = l1.X2 - l1.X1;
-            double b2 = l2.X2 - l2.X1;
-            double c1 = l1.X1 * l1.Y2 - l1.X2 * l1.Y1;
-            double c2 = l1.X1 * l1.Y2 - l1.X2 * l1.Y1;
-            if (a1 * b2 - a2 * b1 == 0)
+            foreach (KeyValuePair<int, Line> polygonLine  in currentPolygon)
             {
-                #region Линии параллельны
-                if ((a1 * c2 - c1 * a2 == 0) && (b1 * c2 - c1 * b2 == 0))  //проверка через 2 определителя матрицы
+                Line l1 = polygonLine.Value;  // для укорочения записи
+                Line l2 = testLine;
+                int crossFlag = -2;
+                Vector c = new Vector(l2.X1, l2.Y1);
+                Vector d = new Vector(l2.X2, l2.Y2);
+                Vector cross = getCrossPoint(l1, l2, out crossFlag);
+                if (crossFlag == 2)
                 {
-                    #region  Линии на одной прямой
-                    double x1 = Math.Min(l1.X1, l1.X2);
-                    double x2 = Math.Max(l1.X1, l1.X2);
-                    double x3 = Math.Min(l2.X1, l2.X2);
-                    double x4 = Math.Max(l2.X1, l2.X2);
-                    if (x1 <= x3)
+                    if ((cross != c) && (cross != d))
                     {
-                        //первая линия левее или начало в одной точке
-                        if (x3 <= x2)
+                        if ((cross - c).Lenght < (res - c).Lenght)
                         {
-                            //линии имеют общий отрезок или точка конца первой совпадает с точкой начала второй
-                            return true;
-                        }
-                        else
-                        {
-                            // линии имеют расстояние между точкой конца первой и точкой начала второй
-                            return false;
+                            res = cross;
                         }
                     }
-                    else
-                    {
-                        //первая линия правее
-                        if (x4 <= x1)
-                        {
-                            //линии имеют общий отрезок или точка конца второй совпадает с точкой начала первой
-                            return true;
-                        }
-                        else
-                        {
-                            // линии имеют расстояние между точкой конца второй и точкой начала первой
-                            return false;
-                        }
-                    }
-                    #endregion
                 }
-                else { return false; }
-                #endregion
             }
-            #region Линии пересекаются
+            
+            return res;
+        }
+
+        public static Vector getCrossPoint(Line l1, Line l2, out int crossFlag)  // тут мне помогал гугль и Крамер
+        {
+            crossFlag = -2;
+            Vector result = new Vector();
+            double m = ((l2.X2 - l2.X1) * (l1.Y1 - l2.Y1) - (l2.Y2 - l2.Y1) * (l1.X1 - l2.X1));
+            double w = ((l1.X2 - l1.X1) * (l1.Y1 - l2.Y1) - (l1.Y2 - l1.Y1) * (l1.X1 - l2.X1));
+            double n = ((l2.Y2 - l2.Y1) * (l1.X2 - l1.X1) - (l2.X2 - l2.X1) * (l1.Y2 - l1.Y1));
+            double Ua = m / n;
+            double Ub = w / n;
+            if ((n == 0) && (m != 0))
+            {
+                crossFlag = -1; //Прямые параллельны и не имеют пересечения
+            }
+            else if ((m == 0) && (n == 0))
+            {
+                crossFlag = 0; //Прямые совпадают
+            }
             else
             {
-                // x,y - точка пересечения
-                double x = -(c1 * b2 - c2 * b1) / (a1 * b2 - a2 * b1);
-                double y = -(a1 * c2 - a2 * c1) / (a1 * b2 - a2 * b1);
-                double x1 = Math.Min(l1.X1, l1.X2);
-                double x2 = Math.Max(l1.X1, l1.X2);
-                if ((x1 <= x) && (x2 > x))
+                //Прямые имеют точку пересечения 
+                result.x = l1.X1 + Ua * (l1.X2 - l1.X1);
+                result.y = l1.Y1 + Ua * (l1.Y2 - l1.Y1);
+                crossFlag = 1;
+                double x11 = Math.Min(l2.X1, l2.X2);
+                double x12 = Math.Max(l2.X1, l2.X2);
+                double y11 = Math.Min(l2.Y1, l2.Y2);
+                double y12 = Math.Max(l2.Y1, l2.Y2);
+
+                double x21 = Math.Min(l1.X1, l1.X2);
+                double x22 = Math.Max(l1.X1, l1.X2);
+                double y21 = Math.Min(l1.Y1, l1.Y2);
+                double y22 = Math.Max(l1.Y1, l1.Y2);
+                if ((result.x > x11) && (result.x < x12) && (result.y > y11) && (result.y < y12) && (result.x > x21) && (result.x < x22) && (result.y > y21) && (result.y < y22))
                 {
-                    // точка пересечения на отрезке
-                    return true;
+                    crossFlag = 2;  // отрезки имеют точку пересечения
                 }
-                else { return false; }
             }
-            #endregion
-        } 
+            return result;
+        }
+
+        public static Line decLenght(Line line, double delta)
+        {
+            if (line.X1 < line.X2)
+            {
+                line.X2 -= delta;
+            }
+            else line.X2 += delta;
+            if (line.Y1 < line.Y2)
+            {
+                line.Y2 -= delta;
+            }
+            else line.Y2 += delta;
+            return line;
+        }
     }
 }

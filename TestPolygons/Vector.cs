@@ -6,7 +6,7 @@ using System.Windows;
 
 namespace TestPolygons
 {
-    public class Vector
+    public class Vector   // класс был написан для другого проекта поэтому много лишнего. Аналогичный класс в С# чем то непонравился, но чем именно уже не помню :)
     {
         public double x;
         public double y;
@@ -145,7 +145,7 @@ namespace TestPolygons
                 return new Vector(this.x / len, this.y / len);
             }
         }
-        public double Corner
+        public double Angle
         {
             get
             {
@@ -160,7 +160,20 @@ namespace TestPolygons
         {
             return new Point(this.x, this.y);
         }
-
+        public bool isNan
+        {
+            get
+            {
+                return (Double.IsNaN(x)) || (Double.IsNaN(y));
+            }
+        }
+        public bool isInfinity
+        {
+            get
+            {
+                return (Double.IsInfinity(x)) || (Double.IsInfinity(y));
+            }
+        }
         #endregion
     }
 }
