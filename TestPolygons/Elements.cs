@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Shapes;
@@ -8,139 +9,159 @@ namespace TestPolygons
 {
     static class Elements
     {
-        public static int lastPoint = -1; // последняя точка незаконченного полигона
-        public static int firstPoint = -1; // первая точка незаконченного полигона
-        public static int counter; // идентификатор точки
-        public static Dictionary<int, Line> currentPolygon = new Dictionary<int, Line>(); // недостроенный полигон
-        public static Dictionary<int, Vector> points = new Dictionary<int, Vector>(); // коллекция точек
-        public static Ellipse singlePoint = new Ellipse(); // для рисования начальной точки полигона
-        public static Line currentLine = new Line();
+        public static Ellipse currentPoint = new Ellipse();  // маркер выбраной точки
         public static List<Polygon> polygons = new List<Polygon>();  // коллекция полигонов
+        public static Polyline line = new Polyline(); // недорисованный полигон
 
-        public static List<UIElement> addPoint(Vector p) // добавление новой точки
+        public static void addPoint(Vector p)
         {
-            counter++;
-            List<UIElement> res = new List<UIElement>();
-            points.Add(counter, p);
-            if ((currentPolygon.Count == 0) && (lastPoint == -1))
+            if (line.Points.Count == 0)
             {
-                singlePoint = getEllipse(p, 2);
-                currentLine = getLine(p, p);
-                currentLine.StrokeThickness = 1;
+                newLineProperty();
+                line.Points.Add(p.getPoint());
             }
-            else 
-            { 
-                singlePoint = new Ellipse();
-            }
-            if (lastPoint != -1)
-            {
-                Line line = getLine(points[lastPoint], p);
-                res.Add(line);
-                line.Tag = counter - 1;
-                currentPolygon.Add(counter, line);
-                currentLine.X1 = p.x;
-                currentLine.Y1 = p.y;
-            }
-            else { firstPoint = counter; }
-            lastPoint = counter;
-            return res;
+            line.StrokeThickness = 0;
+            p = testCrossLine(p);
+            line.Points.Add(p.getPoint());
+            line.StrokeThickness = 2;
         }
 
-        public static Polygon addPolygon(Dictionary<int, Line> lines) // постройка нового полигона
+        public static bool moveLastSegment(Vector p)
         {
-            Line line = getLine(points[lastPoint], points[firstPoint]);
-            lastPoint = -1;
-            currentPolygon.Add(lastPoint, line);
-            Polygon res = new Polygon();
-            List<int> indexs = new List<int>();
-            foreach(KeyValuePair<int, Line> ln in lines)
+            bool res = false;
+            int pCount = line.Points.Count;
+            if (pCount > 0)
             {
-                res.Points.Add(new Point(ln.Value.X1,ln.Value.Y1));
-                indexs.Add(ln.Key);
-            }
-            SolidColorBrush mySolidColorBrush = new SolidColorBrush();
-            mySolidColorBrush.Color = Color.FromArgb(200, 127, 127, 127);
-            res.Fill = mySolidColorBrush;
-            res.Stroke = System.Windows.Media.Brushes.Black;
-            res.StrokeThickness = 2;
-            res.Tag = indexs;
-            firstPoint = -1;
-            polygons.Add(res);
-            currentPolygon.Clear();
-            currentLine.StrokeThickness = 0;
-            return res;
-        }
-        
-        public static int getIndexPoint(Vector p) // поиск индекса точки
-        {
-            int res = -1;
-            foreach (KeyValuePair<int,Vector> point in points)
-            {
-                if (((point.Value.x - p.x < 5) && (point.Value.x - p.x > -5)) && ((point.Value.y- p.y < 5) && (point.Value.y - p.y > -5)))
+                line.Points.RemoveAt(pCount - 1);
+                line.Points.Add(p.getPoint());
+                line.StrokeThickness = 0;
+                Vector p1 = testCrossLine(p);
+                res = (p == p1);
+                Vector a = new Vector(p1);
+                Vector b = new Vector(line.Points[pCount - 2]);
+                if (a.x < b.x)
                 {
-                    return point.Key;
+                    a.x += 1;
+                }
+                else { a.x -= 1; }
+                if (a.y < b.y)
+                {
+                    a.y += 1;
+                }
+                else { a.y -= 1; }
+                line.Points.RemoveAt(pCount - 1);
+                line.Points.Add(a.getPoint());
+
+                line.StrokeThickness = 2;
+            }
+            return res;
+        }
+
+        public static void deleteLastPoint()
+        {
+            int pCount = line.Points.Count;
+            if (pCount > 0)
+            {
+                line.Points.RemoveAt(pCount - 1);
+            }
+        }
+
+        public static bool addPolygon()
+        {
+            bool res = false;
+            int pCount = line.Points.Count;
+            if (pCount > 3)
+            {
+                Vector p = new Vector(line.Points[0]);
+                bool test = moveLastSegment(p);
+                if (test)
+                {
+                    line.Points.RemoveAt(pCount - 1);
+                    Polygon polygon = new Polygon();
+                    polygon.Points = line.Points;
+                    SolidColorBrush sbrush = new SolidColorBrush(Color.FromArgb(200, 127, 127, 127));
+                    polygon.Fill = sbrush;
+                    polygon.StrokeThickness = 2;
+                    polygon.Stroke = Brushes.Blue;
+                    polygons.Add(polygon);
+                    line = new Polyline();
+                    res = true;
                 }
             }
             return res;
         }
 
-        public static Line getLine(double x1, double y1, double x2, double y2) //создание линии по 2-м точкам заданными координатами
+        private static void newLineProperty()
         {
-            Line res = new Line();
-            res.X1 = x1;
-            res.X2 = x2;
-            res.Y1 = y1;
-            res.Y2 = y2;
-            res.Stroke = System.Windows.Media.Brushes.Black;
-            res.StrokeThickness = 2;
-            return res;
+            line.Stroke = Brushes.Black;
+            line.StrokeThickness = 2;
         }
 
-        public static Line getLine(Vector p1, Vector p2) //сохдание линии по 2-м точкам заданными векторами
+        private static void setEllipseProperty(Vector p, Brush color)
         {
-            return getLine(p1.x, p1.y, p2.x, p2.y);
+            currentPoint.Width = 10;
+            currentPoint.Height = 10;
+            currentPoint.StrokeThickness = 5;
+            currentPoint.Stroke = color;
+            currentPoint.Margin = new Thickness(p.x - 5, p.y - 5, 0, 0);
         }
 
-        public static Ellipse getEllipse(double x, double y, int thickness) //создание эллипса по координатам
+        public static Vector getPoint(Vector p, out int polygon, out int pNum)
         {
-            Ellipse res = new Ellipse();
-            res.Width = thickness * 2 + 1;
-            res.Height = thickness * 2 + 1;
-            res.Stroke = System.Windows.Media.Brushes.Black;
-            res.StrokeThickness = thickness;
-            res.Margin = new Thickness(x - (thickness + 0.5), y - (thickness + 0.5), 0, 0);
-            return res;
-        }
-
-        public static Ellipse getEllipse(Vector p) // создание эллипса по вектору со стандартной толщиной (для начальной точки)
-        {
-            return getEllipse(p.x, p.y, 2);
-        }
-
-        public static Ellipse getEllipse(Vector p, int thickness) // создание эллипса по вектору с нестандартной толщиной (для выбраной точки)
-        {
-            return getEllipse(p.x, p.y, thickness);
-        }
-        
-        public static void removePoint(int removeIndex) // удаление точки из полигона
-        {
-            for (int i = 0; i < polygons.Count; i++)
+            polygon = -1;
+            pNum = -1;
+            for (int i=0;i<polygons.Count;i++)
             {
-                Polygon polygon = polygons[i];
-                if (polygon.Points.Count > 3)  // удаление точки и перестройка полигона
+                for (int j=0;j<polygons[i].Points.Count;j++)
                 {
-                    for (int j = 0; j < polygon.Points.Count; j++)
+                    Vector ptv = new Vector(polygons[i].Points[j]);
+                    if ((ptv - p).Lenght < 5)
                     {
-                        if ((polygon.Points[j].X == points[removeIndex].x) && (polygon.Points[j].Y == points[removeIndex].y))
+                        pNum = j;
+                        polygon = i;
+                        setEllipseProperty(ptv, Brushes.Red);
+                        return ptv;
+                    }
+                }
+            }
+            setEllipseProperty(p, Brushes.Transparent);
+            return null;
+        }
+
+        private static Vector testCrossLine(Vector r)
+        {
+            Vector res = new Vector(r);
+            int pCount = line.Points.Count;
+            if (pCount > 1)
+            {
+                for (int i = 0; i < pCount - 1; i++)
+                {
+                    Vector a = new Vector(line.Points[i]);
+                    Vector b = new Vector(line.Points[i + 1]);
+                    Vector c = new Vector(line.Points[pCount - 2]);
+                    Vector d = new Vector(line.Points[pCount-1]);
+                    Line l1 = getLine(a, b);
+                    Line l2 = getLine(c, d);
+                    int crossFlag = -2;
+                    Vector cross = getCrossPoint(l1, l2, out crossFlag);
+                    if (crossFlag == 2)
+                    {
+                        if ((cross - c).Lenght < (res - c).Lenght)
                         {
-                            polygon.Points.RemoveAt(j);
-                            List<int> indexs = (List<int>)polygon.Tag;
-                            indexs.Remove(j);
+                            res = cross;
                         }
                     }
-                    points.Remove(removeIndex);
                 }
             }
+            return res;
+        }
+
+        private static Line getLine(Vector p1, Vector p2)
+        {
+            Line res = new Line();
+            res.X1 = p1.x; res.Y1 = p1.y;
+            res.X2 = p2.x; res.Y2 = p2.y;
+            return res;
         }
 
         public static double getLenght(Vector a, Vector b, Vector c) // вычисление расстояние от точки до отрезка
@@ -154,31 +175,6 @@ namespace TestPolygons
             if (p >= r) { return (c - b).Lenght; }
             if ((0 < p) && (p < r)) { return (c - a - p / r * (b - a)).Lenght; }
             return double.MaxValue;
-        }
-
-        public static Vector checkCurrentPolygon(Vector res, Line testLine)
-        {
-            foreach (KeyValuePair<int, Line> polygonLine  in currentPolygon)
-            {
-                Line l1 = polygonLine.Value;  // для укорочения записи
-                Line l2 = testLine;
-                int crossFlag = -2;
-                Vector c = new Vector(l2.X1, l2.Y1);
-                Vector d = new Vector(l2.X2, l2.Y2);
-                Vector cross = getCrossPoint(l1, l2, out crossFlag);
-                if (crossFlag == 2)
-                {
-                    if ((cross != c) && (cross != d))
-                    {
-                        if ((cross - c).Lenght < (res - c).Lenght)
-                        {
-                            res = cross;
-                        }
-                    }
-                }
-            }
-            
-            return res;
         }
 
         public static Vector getCrossPoint(Line l1, Line l2, out int crossFlag)  // тут мне помогал гугль и Крамер
@@ -221,19 +217,5 @@ namespace TestPolygons
             return result;
         }
 
-        public static Line decLenght(Line line, double delta)
-        {
-            if (line.X1 < line.X2)
-            {
-                line.X2 -= delta;
-            }
-            else line.X2 += delta;
-            if (line.Y1 < line.Y2)
-            {
-                line.Y2 -= delta;
-            }
-            else line.Y2 += delta;
-            return line;
-        }
     }
 }

@@ -74,7 +74,6 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <Compile Include="Tests\Tests.cs" />
     <Compile Include="Tools.cs" />
     <Compile Include="Vector.cs" />
     <Page Include="MainWindow.xaml">

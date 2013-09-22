@@ -28,6 +28,12 @@ namespace TestPolygons
             this.y = p.Y;
         }
 
+        public Vector(Vector p)
+        {
+            this.x = p.x;
+            this.y = p.y;
+        }
+
         public override bool Equals(System.Object obj)
         {
             if (obj == null)
