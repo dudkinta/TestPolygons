@@ -37,7 +37,7 @@ namespace TestPolygons
                 addPolygon();
             }
             line.StrokeThickness = 2;
-        } 
+        }
 
         public static bool moveLastSegment(Vector p)
         {
@@ -105,6 +105,7 @@ namespace TestPolygons
             }
             else
             {
+                sendToCollect(polygonId);
                 setEllipseProperty(p, Brushes.Red); // рисуем курсорчик
             }
         }
@@ -124,8 +125,8 @@ namespace TestPolygons
             }
             return cross;
         }
-        
-        private static List<Vector> savePolygonPoints(Polygon pg)
+
+        public static List<Vector> savePolygonPoints(Polygon pg)
         {
             List<Vector> points = new List<Vector>(); // список точек полигона
             for (int i = 0; i < pg.Points.Count; i++)  // сохраняем точки для восстановления в случае необходимости
@@ -134,8 +135,8 @@ namespace TestPolygons
             }
             return points;
         }
-        
-        private static void restorePolygonPoints(List<Vector> points, Polygon pg)
+
+        public static void restorePolygonPoints(List<Vector> points, Polygon pg)
         {
             pg.Points.Clear();
             for (int i = 0; i < points.Count; i++)
@@ -143,7 +144,7 @@ namespace TestPolygons
                 pg.Points.Add(points[i].getPoint());
             }
         }
-        
+
         private static List<Line> getLinesPolygon(Polygon pg)
         {
             List<Line> lines = new List<Line>();  // список линий полигона
@@ -155,7 +156,7 @@ namespace TestPolygons
             }
             return lines;
         }
-        
+
         public static void deleteLastPoint()
         {
             int pCount = line.Points.Count;
@@ -165,29 +166,30 @@ namespace TestPolygons
             }
         }
 
-        public static bool deletePolygonPoint(Polygon pg, int pId)
+        public static bool deletePolygonPoint(int pg, int pId)
         {
-            if (pg.Points.Count == 3)
+            if (polygons[pg].Points.Count == 3)
             {
-                if (polygons.Remove(pg))
-                {
-                    return true;
-                }
+                polygons.RemoveAt(pg);
+                plgns.RemoveAt(pg);
+                return true;
             }
             else
             {
-                List<Vector> points = savePolygonPoints(pg);
-                pg.Points.RemoveAt(pId);  // удаляем точку
-                if (testListLines(pg))  // если пересечения восстанавливаем точки
+
+                List<Vector> points = savePolygonPoints(polygons[pg]);
+                polygons[pg].Points.RemoveAt(pId);  // удаляем точку
+                if (testListLines(polygons[pg]))  // если пересечения восстанавливаем точки
                 {
-                    restorePolygonPoints(points, pg);
+                    restorePolygonPoints(points, polygons[pg]);
                     return false;
                 }
+                sendToCollect(pg);
                 currentPoint.Stroke = Brushes.Transparent;
             }
             return true;
         }
-        
+
         public static bool addPolygon()
         {
             bool res = false;
@@ -208,9 +210,63 @@ namespace TestPolygons
                     polygons.Add(polygon);
                     line = new Polyline();
                     res = true;
+                    addToCollect(polygon);
                 }
             }
             return res;
+        }
+
+        public static void addToCollect(Polygon pg)
+        {
+            List<Vector> points = normalizePoints(savePolygonPoints(pg), 130, 130);
+            Polygon newPG = new Polygon();
+            restorePolygonPoints(points, newPG);
+            SolidColorBrush sbrush = new SolidColorBrush(Color.FromArgb(255, 127, 127, 127));
+            newPG.Fill = sbrush;
+            newPG.StrokeThickness = 1;
+            newPG.Stroke = Brushes.Blue;
+            Canvas cnv = new Canvas();
+            cnv.Children.Add(newPG);
+            plgns.Add(cnv);
+        }
+
+        private static void sendToCollect(int pg)
+        {
+            List<Vector> points = normalizePoints(savePolygonPoints(polygons[pg]), 130, 130);
+            Polygon newPG = new Polygon();
+            restorePolygonPoints(points, newPG);
+            SolidColorBrush sbrush = new SolidColorBrush(Color.FromArgb(255, 127, 127, 127));
+            newPG.Fill = sbrush;
+            newPG.StrokeThickness = 1;
+            newPG.Stroke = Brushes.Blue;
+            plgns[pg].Children.Clear();
+            plgns[pg].Children.Add(newPG);
+        }
+
+        private static List<Vector> normalizePoints(List<Vector> points, int normX, int normY)
+        {
+            double minX = double.MaxValue;
+            double maxX = double.MinValue;
+            double minY = double.MaxValue;
+            double maxY = double.MinValue;
+            for (int i = 0; i < points.Count; i++)
+            {
+                minX = (points[i].x < minX) ? points[i].x : minX;
+                minY = (points[i].y < minY) ? points[i].y : minY;
+                maxX = (points[i].x > maxX) ? points[i].x : maxX;
+                maxY = (points[i].y > maxY) ? points[i].y : maxY;
+            }
+            double scale = ((maxX - minX) > (maxY - minY)) ? normX / ((maxX - minX)) : normY / (maxY - minY);
+            double sx = ((maxX - minX) > (maxY - minY)) ? 0 : (normX - (maxX - minX) * scale) / 2;
+            double sy = ((maxX - minX) > (maxY - minY)) ? (normY - (maxY - minY) * scale) / 2 : 0;
+            for (int i = 0; i < points.Count; i++)
+            {
+                points[i].x = points[i].x - minX;
+                points[i].x = (points[i].x * scale) + sx;
+                points[i].y = points[i].y - minY;
+                points[i].y = (points[i].y * scale) + sy;
+            }
+            return points;
         }
 
         public static bool addPointPolygon(Vector p)
@@ -235,12 +291,13 @@ namespace TestPolygons
             if (polygonId != -1)
             {
                 List<Vector> points = savePolygonPoints(polygons[polygonId]);
-                polygons[polygonId].Points.Insert(lineId+1, p.getPoint()); // добавляем точку
+                polygons[polygonId].Points.Insert(lineId + 1, p.getPoint()); // добавляем точку
                 if (testListLines(polygons[polygonId]))  // если пересечения восстанавливаем точки
                 {
                     restorePolygonPoints(points, polygons[polygonId]);
                     return true;
                 }
+                sendToCollect(polygonId);
             }
             return false;
         }
@@ -283,7 +340,7 @@ namespace TestPolygons
             }
             else
             {
-                for (int j = 0; j < line.Points.Count-1; j++)
+                for (int j = 0; j < line.Points.Count - 1; j++)
                 {
                     Vector ptv = new Vector(line.Points[j]);
                     if ((ptv - p).Lenght < radius)
@@ -309,7 +366,7 @@ namespace TestPolygons
                     Vector a = new Vector(line.Points[i]);
                     Vector b = new Vector(line.Points[i + 1]);
                     Vector c = new Vector(line.Points[pCount - 2]);
-                    Vector d = new Vector(line.Points[pCount-1]);
+                    Vector d = new Vector(line.Points[pCount - 1]);
                     Line l1 = getLine(a, b);
                     Line l2 = getLine(c, d);
                     int crossFlag = -2;
@@ -393,5 +450,16 @@ namespace TestPolygons
             return result;
         }
 
+        private static void unionPolygon(Polygon pg1, Polygon pg2)
+        {
+            //1) Найти все точки пересечения между ребрами полигонов А и В;
+            //2) Добавить их в качестве новых вершин в оба полигона А и В;
+            //3) Разметить полигоны А и В: каждое ребро из А пометить флагом I(inside), если оно внутри полигона В, и O(outside), если оно снаружи. Аналогично для полигона В.
+            //4) Теперь в зависимости от вида булевой операции:
+            //а) объединение: удалить из А и В все ребра помеченные как I;
+            //б) пересечение: удалить из А и В все ребра помеченные как O;
+            //в) вычитание (А-В): удалить из А все I, а из В все O.
+            //5) Слить то что осталось от А и В в один результирующий полигон.
+        }
     }
 }

@@ -14,10 +14,10 @@
                     <MenuItem Header="_Файл">
                         <MenuItem x:Name="mnuNew" Header="_Новый" Click="mnuNew_Click"/>
                         <Separator/>
-                        <MenuItem x:Name="mnuSaveFile" Header="_Запись в файл"/>
-                        <MenuItem x:Name="mnuSaveBD" Header="_Запись в БД"/>
-                        <MenuItem x:Name="mnuLoadFile" Header="_Загрузка из файла"/>
-                        <MenuItem x:Name="mnuLoadBD" Header="_Загрузка из БД"/>
+                        <MenuItem x:Name="mnuSaveFile" Header="_Запись в файл..." Click="mnuSaveFile_Click"/>
+                        <MenuItem x:Name="mnuSaveBD" Header="_Запись в БД" Click="mnuSaveBD_Click"/>
+                        <MenuItem x:Name="mnuLoadFile" Header="_Загрузка из файла..." Click="mnuLoadFile_Click"/>
+                        <MenuItem x:Name="mnuLoadBD" Header="_Загрузка из БД" Click="mnuLoadBD_Click"/>
                         <Separator/>
                         <MenuItem x:Name="mnuExit" Header="_Выход" Click="mnuExit_Click"/>
                     </MenuItem>
@@ -30,6 +30,7 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <Grid Grid.Column="0" Background="#FFB4B4B4" >
                     <Border BorderBrush="Gray" BorderThickness="1">
@@ -47,6 +48,21 @@
                     <Border BorderBrush="Gray" BorderThickness="1">
                         <Canvas x:Name="canvas" MouseDown="canvas_MouseDown" PreviewMouseMove="canvas_PreviewMouseMove"/>
                     </Border>
+                </Grid>
+                <Grid Grid.Column="2">
+                    <DockPanel>
+                        <ListView x:Name="lbCanvases" ItemTemplate="{DynamicResource lbCanvasTemplate}" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto" HorizontalAlignment="Left" DockPanel.Dock="Top">
+                            <ListView.Resources>
+                                <DataTemplate x:Key="lbCanvasTemplate">
+                                    <Grid>
+                                        <StackPanel>
+                                            <ContentControl Width="135" Height="135" Content="{Binding}"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListView.Resources>
+                        </ListView>
+                    </DockPanel>
                 </Grid>
             </Grid>
             <Grid Grid.Row="2">

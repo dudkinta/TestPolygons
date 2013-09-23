@@ -1,18 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Media.Media3D;
-using System.Windows.Navigation;
 using System.Windows.Shapes;
 
 namespace TestPolygons
@@ -30,6 +20,9 @@ namespace TestPolygons
             InitializeComponent();
             prepareCanvas();
             prepareToolPanel();
+            lbCanvases.ItemsSource = null;
+            lbCanvases.Items.Clear();
+            lbCanvases.ItemsSource = Elements.plgns;
             lbHint.Content = "Добро пожаловать в программу рисования полигонов";
         }  // инициализация
 
@@ -59,21 +52,22 @@ namespace TestPolygons
             {
                 canvas.Children.Add(polygon);
             }
-            IEnumerable<UIElement> elements = from childs in Elements.plgns select
-                                                  (from el in (IEnumerable<UIElement>)childs.Children where (el is Polygon) select el).DefaultIfEmpty(new Polygon()).FirstOrDefault();
-            foreach (UIElement element in elements)
-            {
-                canvas.Children.Add(element);
-            }
             canvas.Children.Add(Elements.line);
             canvas.Children.Add(Elements.currentPoint);
-        } 
+        }
+
+        private void updateBinding()
+        {
+            lbCanvases.ItemsSource = null;
+            lbCanvases.Items.Clear();
+            lbCanvases.ItemsSource = Elements.plgns;
+        }
 
         private void fmWPFMain_SizeChanged(object sender, SizeChangedEventArgs e) // изменение размеров окна 
         {
             refreshCanvas();
         }
-        
+
         private void btnToolArrow_Click(object sender, RoutedEventArgs e) // выбор инструмента для перетаскивания точек
         {
             Tools.type = Tools.ToolType.arrow;
@@ -88,18 +82,6 @@ namespace TestPolygons
             btnToolArrow.IsChecked = false;
         }
 
-        private void mnuExit_Click(object sender, RoutedEventArgs e)  // команда меню "выход"
-        {
-            this.Close();
-        }
-
-        private void mnuNew_Click(object sender, RoutedEventArgs e) // команда меню "новый"
-        {
-            canvas.Children.Clear();
-            prepareCanvas();
-            prepareToolPanel();
-        }
-
         private void fmWPFMain_PreviewKeyDown(object sender, KeyEventArgs e) // обработка команды от клавиатуры
         {
             if (e.Key == Key.Enter) // строим полигон
@@ -112,17 +94,21 @@ namespace TestPolygons
                     }
                 }
             }
+            if (e.Key == Key.Escape)
+            {
+                Elements.line.Points.Clear();
+            }
             if ((e.Key == Key.Delete) || (e.Key == Key.Back))  // удаляем точки
             {
                 if (Tools.type == Tools.ToolType.polygon)  // если строим полигон то удаляем последнюю точку
                 {
                     Elements.deleteLastPoint();
                 }
-                else 
+                else
                 {
-                    if ((polygonId != -1) && (pId!=-1))  // если выбран полигон и точка то удаляем ее
+                    if ((polygonId != -1) && (pId != -1))  // если выбран полигон и точка то удаляем ее
                     {
-                        if (!Elements.deletePolygonPoint(Elements.polygons[polygonId], pId))
+                        if (!Elements.deletePolygonPoint(polygonId, pId))
                         {
                             lbHint.Content = "При попытке удалении точки возникло самопересечение. Удаление данной точки запрещено.";
                         }
@@ -192,6 +178,44 @@ namespace TestPolygons
                     }
                 }
             }
-        } 
+        }
+
+        private void mnuSaveFile_Click(object sender, RoutedEventArgs e)
+        {
+            InOutData.saveToFile();
+        }
+
+        private void mnuLoadFile_Click(object sender, RoutedEventArgs e)
+        {
+            InOutData.loadFromFile();
+            refreshCanvas();
+        }
+
+        private void mnuSaveBD_Click(object sender, RoutedEventArgs e)
+        {
+            InOutData.saveToDB();
+        }
+
+        private void mnuLoadBD_Click(object sender, RoutedEventArgs e)
+        {
+            InOutData.loadFromDB();
+            refreshCanvas();
+        }
+
+        private void mnuExit_Click(object sender, RoutedEventArgs e)  // команда меню "выход"
+        {
+            this.Close();
+        }
+
+        private void mnuNew_Click(object sender, RoutedEventArgs e) // команда меню "новый"
+        {
+            canvas.Children.Clear();
+            prepareCanvas();
+            prepareToolPanel();
+            Elements.line.Points.Clear();
+            Elements.polygons = new List<Polygon>();
+            Elements.plgns = new ObservableCollection<Canvas>();
+            updateBinding();
+        }
     }
 }
