@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
 
@@ -11,6 +13,7 @@ namespace TestPolygons
     {
         public static Ellipse currentPoint = new Ellipse();  // маркер выбраной точки
         public static List<Polygon> polygons = new List<Polygon>();  // коллекция полигонов
+        public static ObservableCollection<Canvas> plgns = new ObservableCollection<Canvas>();  // коллекция полигонов
         public static Polyline line = new Polyline(); // недорисованный полигон
 
         public static void addPoint(Vector p)

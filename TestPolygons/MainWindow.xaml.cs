@@ -59,6 +59,12 @@ namespace TestPolygons
             {
                 canvas.Children.Add(polygon);
             }
+            IEnumerable<UIElement> elements = from childs in Elements.plgns select
+                                                  (from el in (IEnumerable<UIElement>)childs.Children where (el is Polygon) select el).DefaultIfEmpty(new Polygon()).FirstOrDefault();
+            foreach (UIElement element in elements)
+            {
+                canvas.Children.Add(element);
+            }
             canvas.Children.Add(Elements.line);
             canvas.Children.Add(Elements.currentPoint);
         } 
