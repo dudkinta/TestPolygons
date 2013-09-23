@@ -170,14 +170,21 @@ namespace TestPolygons
         {
             get
             {
-                return (Double.IsNaN(x)) || (Double.IsNaN(y));
+                return ((Double.IsNaN(x)) || (Double.IsNaN(y)));
             }
         }
         public bool isInfinity
         {
             get
             {
-                return (Double.IsInfinity(x)) || (Double.IsInfinity(y));
+                return ((Double.IsInfinity(x)) || (Double.IsInfinity(y)));
+            }
+        }
+        public bool isNull
+        {
+            get
+            {
+                return ((x==0) && (y==0));
             }
         }
         #endregion

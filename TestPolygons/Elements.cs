@@ -15,14 +15,24 @@ namespace TestPolygons
 
         public static void addPoint(Vector p)
         {
-            if (line.Points.Count == 0)
-            {
-                newLineProperty();
-                line.Points.Add(p.getPoint());
-            }
             line.StrokeThickness = 0;
             p = testCrossLine(p);
-            line.Points.Add(p.getPoint());
+            int pg = -1;
+            int ptId = -1;
+            Vector p1 = getPoint(p, out pg, out ptId, 5, false);
+            if (ptId == -1)
+            {
+                if (line.Points.Count == 0)
+                {
+                    newLineProperty();
+                    line.Points.Add(p.getPoint());
+                }
+                line.Points.Add(p.getPoint());
+            }
+            if (ptId == 0)
+            {
+                addPolygon();
+            }
             line.StrokeThickness = 2;
         }
 
@@ -30,31 +40,50 @@ namespace TestPolygons
         {
             bool res = false;
             int pCount = line.Points.Count;
-            if (pCount > 0)
+            if (pCount >= 1)
             {
+                Vector testPoint = new Vector(line.Points[pCount - 1]);
+                #region костыль
+                if (testPoint.x == p.x) // исключает протыкание линии если новая линия горизонталь или вертикаль
+                {
+                    p.x += 0.1;
+                }
+                if (testPoint.y == p.y)
+                {
+                    p.y += 0.1;
+                }
+                #endregion
                 line.Points.RemoveAt(pCount - 1);
                 line.Points.Add(p.getPoint());
                 line.StrokeThickness = 0;
                 Vector p1 = testCrossLine(p);
                 res = (p == p1);
-                Vector a = new Vector(p1);
-                Vector b = new Vector(line.Points[pCount - 2]);
-                if (a.x < b.x)
+                #region костыль
+                if (!res)  // для того что бы точка находилась не на линии, а то самоперечечения становятся возможны
                 {
-                    a.x += 1;
+                    double delta = 1;
+                    if (p1.x < p.x)
+                    {
+                        p1.x -= delta;
+                    }
+                    else { p1.x += delta; }
+                    if (p1.y < p.y)
+                    {
+                        p1.y -= delta;
+                    }
+                    else { p1.y += delta; }
                 }
-                else { a.x -= 1; }
-                if (a.y < b.y)
-                {
-                    a.y += 1;
-                }
-                else { a.y -= 1; }
+                #endregion
                 line.Points.RemoveAt(pCount - 1);
-                line.Points.Add(a.getPoint());
-
+                line.Points.Add(p1.getPoint());
                 line.StrokeThickness = 2;
             }
             return res;
+        }
+
+        public static void movePolygonPoint(Vector p)
+        {
+
         }
 
         public static void deleteLastPoint()
@@ -106,26 +135,42 @@ namespace TestPolygons
             currentPoint.Margin = new Thickness(p.x - 5, p.y - 5, 0, 0);
         }
 
-        public static Vector getPoint(Vector p, out int polygon, out int pNum)
+        public static Vector getPoint(Vector p, out int polygon, out int pNum, int radius, bool isPolygon)
         {
             polygon = -1;
             pNum = -1;
-            for (int i=0;i<polygons.Count;i++)
+            if (isPolygon)
             {
-                for (int j=0;j<polygons[i].Points.Count;j++)
+                for (int i = 0; i < polygons.Count; i++)
                 {
-                    Vector ptv = new Vector(polygons[i].Points[j]);
-                    if ((ptv - p).Lenght < 5)
+                    for (int j = 0; j < polygons[i].Points.Count; j++)
+                    {
+                        Vector ptv = new Vector(polygons[i].Points[j]);
+                        if ((ptv - p).Lenght < radius)
+                        {
+                            pNum = j;
+                            polygon = i;
+                            setEllipseProperty(ptv, Brushes.Red);
+                            return ptv;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                for (int j = 0; j < line.Points.Count-1; j++)
+                {
+                    Vector ptv = new Vector(line.Points[j]);
+                    if ((ptv - p).Lenght < radius)
                     {
                         pNum = j;
-                        polygon = i;
-                        setEllipseProperty(ptv, Brushes.Red);
+                        setEllipseProperty(ptv, Brushes.Green);
                         return ptv;
                     }
                 }
             }
             setEllipseProperty(p, Brushes.Transparent);
-            return null;
+            return new Vector();
         }
 
         private static Vector testCrossLine(Vector r)

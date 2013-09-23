@@ -140,7 +140,8 @@ namespace TestPolygons
             Vector p = new Vector(Mouse.GetPosition(canvas));
             int polygonId = -1;
             int pId = -1;
-            Vector cursor = Elements.getPoint(p, out polygonId, out pId);
+            bool isPolygon = (Elements.line.Points.Count == 0);
+            Vector cursor = Elements.getPoint(p, out polygonId, out pId, 5, isPolygon);
             if (polygonId != -1)
             {
                 btnToolArrow_Click(null, null);
@@ -152,6 +153,10 @@ namespace TestPolygons
             if (Tools.type == Tools.ToolType.polygon)
             {
                 Elements.moveLastSegment(p);
+            }
+            if (Tools.type == Tools.ToolType.arrow)
+            {
+                Elements.movePolygonPoint(p);
             }
         } 
     }
