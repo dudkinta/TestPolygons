@@ -22,6 +22,9 @@ namespace TestPolygons
     /// </summary>
     public partial class fmMain : Window
     {
+        private int polygonId = -1;  // для хранения номера полингона под курсором
+        private int pId = -1; // для хранения номера точки под курсором
+
         public fmMain()
         {
             InitializeComponent();
@@ -138,25 +141,32 @@ namespace TestPolygons
         private void canvas_PreviewMouseMove(object sender, MouseEventArgs e)  // обработка команд от мыши
         {
             Vector p = new Vector(Mouse.GetPosition(canvas));
-            int polygonId = -1;
-            int pId = -1;
-            bool isPolygon = (Elements.line.Points.Count == 0);
-            Vector cursor = Elements.getPoint(p, out polygonId, out pId, 5, isPolygon);
-            if (polygonId != -1)
+            if (e.LeftButton == MouseButtonState.Released)
             {
-                btnToolArrow_Click(null, null);
+                Vector cursor = Elements.getPoint(p, out polygonId, out pId, 10, (Elements.line.Points.Count == 0));
+                if (polygonId != -1)   // переключатся на стрелку только если точка полигона под мышкой
+                {
+                    btnToolArrow_Click(null, null);
+                }
+                else
+                {
+                    btnToolPoly_Click(null, null);
+                }
+
+                if (Tools.type == Tools.ToolType.polygon)
+                {
+                    Elements.moveLastSegment(p);
+                }
             }
-            else
+            if (e.LeftButton == MouseButtonState.Pressed)
             {
-                btnToolPoly_Click(null, null);
-            }
-            if (Tools.type == Tools.ToolType.polygon)
-            {
-                Elements.moveLastSegment(p);
-            }
-            if (Tools.type == Tools.ToolType.arrow)
-            {
-                Elements.movePolygonPoint(p);
+                if (Tools.type == Tools.ToolType.arrow)
+                {
+                    if ((polygonId != -1) && (pId != -1))
+                    {
+                        Elements.movePolygonPoint(p, polygonId, pId);
+                    }
+                }
             }
         } 
     }

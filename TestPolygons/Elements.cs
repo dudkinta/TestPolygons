@@ -34,7 +34,7 @@ namespace TestPolygons
                 addPolygon();
             }
             line.StrokeThickness = 2;
-        }
+        } 
 
         public static bool moveLastSegment(Vector p)
         {
@@ -81,9 +81,43 @@ namespace TestPolygons
             return res;
         }
 
-        public static void movePolygonPoint(Vector p)
+        public static void movePolygonPoint(Vector p, int polygonId, int centerId)
         {
-
+            List<Line> lines = new List<Line>();  // список линий полигона
+            List<Vector> points = new List<Vector>(); // список точек полигона
+            for (int i = 0; i < polygons[polygonId].Points.Count; i++)  // сохраняем точки для восстановления в случае необходимости
+            {
+                points.Add(new Vector(polygons[polygonId].Points[i]));
+            }
+            polygons[polygonId].Points[centerId] = new Point(p.x, p.y);  // перемещаем точку
+            for (int i = 0; i < polygons[polygonId].Points.Count; i++) // составляем список линий полигона
+            {
+                int leftId = (i == polygons[polygonId].Points.Count - 1) ? 0 : i + 1;
+                Line leftLine = getLine(new Vector(polygons[polygonId].Points[i]), new Vector(polygons[polygonId].Points[leftId]));  // левая линия от точки
+                lines.Add(leftLine);
+            }
+            bool cross = false;  // флаг пересечений  (false - нет пересечений)
+            for (int i = 0; i < lines.Count; i++)  // проверяем каждую линию с каждой (самый медленный алгоритм и самый простой)
+            {
+                for (int j = 0; j < lines.Count; j++) 
+                {
+                    int crossFlag = -2;
+                    getCrossPoint(lines[i], lines[j], out crossFlag);
+                    cross = cross || (crossFlag==2);
+                }
+            }
+            if (cross)  // если пересечения восстанавливаем точки
+            {
+                polygons[polygonId].Points.Clear();
+                for (int i = 0; i < points.Count; i++)
+                {
+                    polygons[polygonId].Points.Add(points[i].getPoint());
+                }
+            }
+            else
+            {
+                setEllipseProperty(p, Brushes.Red); // рисуем курсорчик
+            }
         }
 
         public static void deleteLastPoint()
