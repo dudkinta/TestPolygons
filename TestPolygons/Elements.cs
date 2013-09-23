@@ -84,6 +84,17 @@ namespace TestPolygons
         public static void movePolygonPoint(Vector p, int polygonId, int centerId)
         {
             List<Vector> points = savePolygonPoints(polygons[polygonId]);
+            #region костыль
+            // опять костыль с протыканием вертикали и горизонтали
+            if (polygons[polygonId].Points[centerId].X == p.x)
+            {
+                p.x += 0.1;
+            }
+            if (polygons[polygonId].Points[centerId].Y == p.y)
+            {
+                p.y += 0.1;
+            }
+            #endregion
             polygons[polygonId].Points[centerId] = new Point(p.x, p.y);  // перемещаем точку
             if (testListLines(polygons[polygonId]))  // если пересечения восстанавливаем точки
             {
@@ -167,11 +178,11 @@ namespace TestPolygons
                 if (testListLines(pg))  // если пересечения восстанавливаем точки
                 {
                     restorePolygonPoints(points, pg);
-                    return true;
+                    return false;
                 }
-                return false;
+                currentPoint.Stroke = Brushes.Transparent;
             }
-            return false;
+            return true;
         }
         
         public static bool addPolygon()
@@ -197,6 +208,38 @@ namespace TestPolygons
                 }
             }
             return res;
+        }
+
+        public static bool addPointPolygon(Vector p)
+        {
+            double minLenght = double.MaxValue;
+            int polygonId = -1;
+            int lineId = -1;
+            for (int i = 0; i < polygons.Count; i++)
+            {
+                List<Line> lines = getLinesPolygon(polygons[i]);
+                for (int j = 0; j < lines.Count; j++)
+                {
+                    double len = getLenght(lines[j], p);
+                    if (len < minLenght)
+                    {
+                        minLenght = len;
+                        polygonId = i;
+                        lineId = j;
+                    }
+                }
+            }
+            if (polygonId != -1)
+            {
+                List<Vector> points = savePolygonPoints(polygons[polygonId]);
+                polygons[polygonId].Points.Insert(lineId+1, p.getPoint()); // добавляем точку
+                if (testListLines(polygons[polygonId]))  // если пересечения восстанавливаем точки
+                {
+                    restorePolygonPoints(points, polygons[polygonId]);
+                    return true;
+                }
+            }
+            return false;
         }
 
         private static void newLineProperty()
@@ -288,8 +331,14 @@ namespace TestPolygons
             return res;
         }
 
-        public static double getLenght(Vector a, Vector b, Vector c) // вычисление расстояние от точки до отрезка
+        private static double getLenght(Line line, Vector c) // вычисление расстояние от точки до отрезка
         {
+            Vector a = new Vector();
+            a.x = line.X1;
+            a.y = line.Y1;
+            Vector b = new Vector();
+            b.x = line.X2;
+            b.y = line.Y2;
             //a - начало отрезка
             //б - конец отрезка 
             //с - точка

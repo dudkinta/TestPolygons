@@ -120,6 +120,11 @@ namespace TestPolygons
                         {
                             lbHint.Content = "При попытке удалении точки возникло самопересечение. Удаление данной точки запрещено.";
                         }
+                        else
+                        {
+                            polygonId = -1;
+                            pId = -1;
+                        }
                     }
                 }
             }
@@ -133,7 +138,10 @@ namespace TestPolygons
             #region Добавление точки к полигону
             if ((e.LeftButton != MouseButtonState.Pressed) && (e.RightButton == MouseButtonState.Pressed))
             {
-
+                if (!Elements.addPointPolygon(p))
+                {
+                    lbHint.Content = "Добавление точки приведет к самопересечению. Выберете другое место для добавления точки.";
+                }
             }
             #endregion
             #region Добавление точки к недостроееному полигону
