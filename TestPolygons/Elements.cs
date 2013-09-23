@@ -83,36 +83,11 @@ namespace TestPolygons
 
         public static void movePolygonPoint(Vector p, int polygonId, int centerId)
         {
-            List<Line> lines = new List<Line>();  // список линий полигона
-            List<Vector> points = new List<Vector>(); // список точек полигона
-            for (int i = 0; i < polygons[polygonId].Points.Count; i++)  // сохраняем точки для восстановления в случае необходимости
-            {
-                points.Add(new Vector(polygons[polygonId].Points[i]));
-            }
+            List<Vector> points = savePolygonPoints(polygons[polygonId]);
             polygons[polygonId].Points[centerId] = new Point(p.x, p.y);  // перемещаем точку
-            for (int i = 0; i < polygons[polygonId].Points.Count; i++) // составляем список линий полигона
+            if (testListLines(polygons[polygonId]))  // если пересечения восстанавливаем точки
             {
-                int leftId = (i == polygons[polygonId].Points.Count - 1) ? 0 : i + 1;
-                Line leftLine = getLine(new Vector(polygons[polygonId].Points[i]), new Vector(polygons[polygonId].Points[leftId]));  // левая линия от точки
-                lines.Add(leftLine);
-            }
-            bool cross = false;  // флаг пересечений  (false - нет пересечений)
-            for (int i = 0; i < lines.Count; i++)  // проверяем каждую линию с каждой (самый медленный алгоритм и самый простой)
-            {
-                for (int j = 0; j < lines.Count; j++) 
-                {
-                    int crossFlag = -2;
-                    getCrossPoint(lines[i], lines[j], out crossFlag);
-                    cross = cross || (crossFlag==2);
-                }
-            }
-            if (cross)  // если пересечения восстанавливаем точки
-            {
-                polygons[polygonId].Points.Clear();
-                for (int i = 0; i < points.Count; i++)
-                {
-                    polygons[polygonId].Points.Add(points[i].getPoint());
-                }
+                restorePolygonPoints(points, polygons[polygonId]);
             }
             else
             {
@@ -120,6 +95,53 @@ namespace TestPolygons
             }
         }
 
+        private static bool testListLines(Polygon pg)
+        {
+            List<Line> lines = getLinesPolygon(pg);
+            bool cross = false;  // флаг пересечений  (false - нет пересечений)
+            for (int i = 0; i < lines.Count; i++)  // проверяем каждую линию с каждой (самый медленный алгоритм и самый простой)
+            {
+                for (int j = 0; j < lines.Count; j++)
+                {
+                    int crossFlag = -2;
+                    getCrossPoint(lines[i], lines[j], out crossFlag);
+                    cross = cross || (crossFlag == 2);
+                }
+            }
+            return cross;
+        }
+        
+        private static List<Vector> savePolygonPoints(Polygon pg)
+        {
+            List<Vector> points = new List<Vector>(); // список точек полигона
+            for (int i = 0; i < pg.Points.Count; i++)  // сохраняем точки для восстановления в случае необходимости
+            {
+                points.Add(new Vector(pg.Points[i]));
+            }
+            return points;
+        }
+        
+        private static void restorePolygonPoints(List<Vector> points, Polygon pg)
+        {
+            pg.Points.Clear();
+            for (int i = 0; i < points.Count; i++)
+            {
+                pg.Points.Add(points[i].getPoint());
+            }
+        }
+        
+        private static List<Line> getLinesPolygon(Polygon pg)
+        {
+            List<Line> lines = new List<Line>();  // список линий полигона
+            for (int i = 0; i < pg.Points.Count; i++) // составляем список линий полигона
+            {
+                int leftId = (i == pg.Points.Count - 1) ? 0 : i + 1;
+                Line leftLine = getLine(new Vector(pg.Points[i]), new Vector(pg.Points[leftId]));  // левая линия от точки
+                lines.Add(leftLine);
+            }
+            return lines;
+        }
+        
         public static void deleteLastPoint()
         {
             int pCount = line.Points.Count;
@@ -129,6 +151,29 @@ namespace TestPolygons
             }
         }
 
+        public static bool deletePolygonPoint(Polygon pg, int pId)
+        {
+            if (pg.Points.Count == 3)
+            {
+                if (polygons.Remove(pg))
+                {
+                    return true;
+                }
+            }
+            else
+            {
+                List<Vector> points = savePolygonPoints(pg);
+                pg.Points.RemoveAt(pId);  // удаляем точку
+                if (testListLines(pg))  // если пересечения восстанавливаем точки
+                {
+                    restorePolygonPoints(points, pg);
+                    return true;
+                }
+                return false;
+            }
+            return false;
+        }
+        
         public static bool addPolygon()
         {
             bool res = false;

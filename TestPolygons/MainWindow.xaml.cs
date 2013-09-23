@@ -112,6 +112,16 @@ namespace TestPolygons
                 {
                     Elements.deleteLastPoint();
                 }
+                else 
+                {
+                    if ((polygonId != -1) && (pId!=-1))  // если выбран полигон и точка то удаляем ее
+                    {
+                        if (!Elements.deletePolygonPoint(Elements.polygons[polygonId], pId))
+                        {
+                            lbHint.Content = "При попытке удалении точки возникло самопересечение. Удаление данной точки запрещено.";
+                        }
+                    }
+                }
             }
             refreshCanvas();
         }
@@ -153,7 +163,7 @@ namespace TestPolygons
                     btnToolPoly_Click(null, null);
                 }
 
-                if (Tools.type == Tools.ToolType.polygon)
+                if (Tools.type == Tools.ToolType.polygon) // двигаем последний сегмент недостроенного полигона
                 {
                     Elements.moveLastSegment(p);
                 }
@@ -162,7 +172,7 @@ namespace TestPolygons
             {
                 if (Tools.type == Tools.ToolType.arrow)
                 {
-                    if ((polygonId != -1) && (pId != -1))
+                    if ((polygonId != -1) && (pId != -1))  // двигаем точку полигона если только выбран конкретный полигон и конкретная точка
                     {
                         Elements.movePolygonPoint(p, polygonId, pId);
                     }
