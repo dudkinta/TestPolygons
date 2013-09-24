@@ -62,6 +62,7 @@ namespace TestPolygons
             MenuItem mnuItemDelete = new MenuItem();
             mnuItemDelete.Header = "_Удалить";
             mnuItemDelete.Tag = new KeyValuePair<int, string>(id, name);
+            mnuItemDelete.Click += mnuItemDelete_Click;
             mnuItem.Items.Add(mnuItemLoad);
             mnuItem.Items.Add(mnuItemSave);
             mnuItem.Items.Add(new Separator());
@@ -69,14 +70,38 @@ namespace TestPolygons
             mnuBD.Items.Add(mnuItem);
         }
 
-        void mnuItemLoad_Click(object sender, RoutedEventArgs e)
+        void mnuItemDelete_Click(object sender, RoutedEventArgs e)
         {
             MenuItem mnuCollect = sender as MenuItem;
             if (mnuCollect != null)
             {
                 KeyValuePair<int, string> collect = (KeyValuePair<int, string>)mnuCollect.Tag;
-                InOutData.loadFromDB(collect.Key);
-                refreshCanvas();
+                if (InOutData.deleteFromDB(collect.Key))
+                {
+                    MessageBox.Show("Набор полигонов удален из базы данных");
+                    prepareDBsubMenu();
+                }
+                else
+                {
+                    MessageBox.Show("Ошибка удаления набора полигонов из базы данных");
+                }
+            }
+        }
+
+        private void mnuItemLoad_Click(object sender, RoutedEventArgs e)
+        {
+            MenuItem mnuCollect = sender as MenuItem;
+            if (mnuCollect != null)
+            {
+                KeyValuePair<int, string> collect = (KeyValuePair<int, string>)mnuCollect.Tag;
+                if (InOutData.loadFromDB(collect.Key))
+                {
+                    refreshCanvas();
+                }
+                else
+                {
+                    MessageBox.Show("Ошибка загрузки набора полигонов из базы данных");
+                }
             }
         }
 
@@ -89,9 +114,10 @@ namespace TestPolygons
             }
             else
             {
-                MessageBox.Show("Ошибка сохранение набора полигонов в бзу данных");
+                MessageBox.Show("Ошибка сохранение набора полигонов в базу данных");
             }
         }
+        
         private void mnuItemSave_Click(object sender, RoutedEventArgs e)
         {
             MenuItem mnuCollect = sender as MenuItem;
@@ -101,6 +127,7 @@ namespace TestPolygons
                 saveToDB(collect.Key, collect.Value);
             }
         }
+        
         private void mnuNewCollect_Click(object sender, RoutedEventArgs e)
         {
             NewCollectDB fmNewCollectDBname = new NewCollectDB();

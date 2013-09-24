@@ -55,6 +55,7 @@ namespace TestPolygons
                 catch (Exception e)
                 {
                     MessageBox.Show(e.Message);
+                    return false;
                 }
             }
             return true;
@@ -110,7 +111,27 @@ namespace TestPolygons
             }
             return true;
         }
-        
+
+        public static bool deleteFromDB(int id)
+        {
+            try
+            {
+                SqlCommand sqlCommand = new SqlCommand("DELETE FROM [dbo].[collects] WHERE id=@id;");
+                sqlCommand.Connection = new SqlConnection(DBconfig.dbConnect);
+                sqlCommand.Parameters.Clear();
+                sqlCommand.Parameters.AddWithValue("@id", id);
+                sqlCommand.Connection.Open();
+                sqlCommand.ExecuteNonQuery();
+                sqlCommand.Connection.Close();
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show(e.Message);
+                return false;
+            }
+            return true;
+        }
+
         public static bool loadFromDB(int id)
         {
             try
@@ -137,6 +158,7 @@ namespace TestPolygons
             catch (Exception e)
             {
                 MessageBox.Show(e.Message);
+                return false;
             }
             return true;
         }
