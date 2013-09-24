@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
@@ -20,11 +21,95 @@ namespace TestPolygons
             InitializeComponent();
             prepareCanvas();
             prepareToolPanel();
+            prepareDBsubMenu();
             lbCanvases.ItemsSource = null;
             lbCanvases.Items.Clear();
             lbCanvases.ItemsSource = Elements.plgns;
             lbHint.Content = "Добро пожаловать в программу рисования полигонов";
         }  // инициализация
+
+        private void prepareDBsubMenu()
+        {
+            mnuBD.Items.Clear();
+            Dictionary<int, string> bdCollect = InOutData.getCollectNamesFromDB();
+            if (bdCollect != null)
+            {
+                MenuItem mnuNewItem = new MenuItem();
+                mnuNewItem.Header = "<Новый набор>";
+                mnuNewItem.Click += mnuNewCollect_Click;
+                mnuBD.Items.Add(mnuNewItem);
+                mnuBD.Items.Add(new Separator());
+                foreach (KeyValuePair<int, string> item in bdCollect)
+                {
+                    addMenuCollectItem(item.Key, item.Value);
+                }
+            }
+            else { mnuBD.IsEnabled = false; }
+        }
+
+        private void addMenuCollectItem(int id, string name)
+        {
+            MenuItem mnuItem = new MenuItem();
+            mnuItem.Header = name;
+            MenuItem mnuItemLoad = new MenuItem();
+            mnuItemLoad.Header = "_Загрузить";
+            mnuItemLoad.Tag = new KeyValuePair<int, string>(id, name);
+            mnuItemLoad.Click += mnuItemLoad_Click;
+            MenuItem mnuItemSave = new MenuItem();
+            mnuItemSave.Header = "_Сохранить";
+            mnuItemSave.Tag = new KeyValuePair<int, string>(id, name);
+            mnuItemSave.Click += mnuItemSave_Click;
+            MenuItem mnuItemDelete = new MenuItem();
+            mnuItemDelete.Header = "_Удалить";
+            mnuItemDelete.Tag = new KeyValuePair<int, string>(id, name);
+            mnuItem.Items.Add(mnuItemLoad);
+            mnuItem.Items.Add(mnuItemSave);
+            mnuItem.Items.Add(new Separator());
+            mnuItem.Items.Add(mnuItemDelete);
+            mnuBD.Items.Add(mnuItem);
+        }
+
+        void mnuItemLoad_Click(object sender, RoutedEventArgs e)
+        {
+            MenuItem mnuCollect = sender as MenuItem;
+            if (mnuCollect != null)
+            {
+                KeyValuePair<int, string> collect = (KeyValuePair<int, string>)mnuCollect.Tag;
+                InOutData.loadFromDB(collect.Key);
+                refreshCanvas();
+            }
+        }
+
+        private void saveToDB(int id, string collectName)
+        {
+            if (InOutData.saveToDB(id, collectName))
+            {
+                prepareDBsubMenu();
+                MessageBox.Show("Набор полигонов сохранен в базу данных");
+            }
+            else
+            {
+                MessageBox.Show("Ошибка сохранение набора полигонов в бзу данных");
+            }
+        }
+        private void mnuItemSave_Click(object sender, RoutedEventArgs e)
+        {
+            MenuItem mnuCollect = sender as MenuItem;
+            if (mnuCollect != null)
+            {
+                KeyValuePair<int, string> collect = (KeyValuePair<int, string>)mnuCollect.Tag;
+                saveToDB(collect.Key, collect.Value);
+            }
+        }
+        private void mnuNewCollect_Click(object sender, RoutedEventArgs e)
+        {
+            NewCollectDB fmNewCollectDBname = new NewCollectDB();
+            fmNewCollectDBname.ShowDialog();
+            if (fmNewCollectDBname.result)
+            {
+                saveToDB(-1, fmNewCollectDBname.collectName);
+            }
+        }
 
         private void prepareToolPanel() // подготовка панели инструментов
         {
@@ -191,17 +276,6 @@ namespace TestPolygons
             refreshCanvas();
         }
 
-        private void mnuSaveBD_Click(object sender, RoutedEventArgs e)
-        {
-            InOutData.saveToDB();
-        }
-
-        private void mnuLoadBD_Click(object sender, RoutedEventArgs e)
-        {
-            InOutData.loadFromDB();
-            refreshCanvas();
-        }
-
         private void mnuExit_Click(object sender, RoutedEventArgs e)  // команда меню "выход"
         {
             this.Close();
@@ -216,6 +290,11 @@ namespace TestPolygons
             Elements.polygons = new List<Polygon>();
             Elements.plgns = new ObservableCollection<Canvas>();
             updateBinding();
+        }
+
+        private void mnuPrint_Click(object sender, RoutedEventArgs e)
+        {
+            InOutData.printPolygon(canvas, "Набор полигонов");
         }
     }
 }

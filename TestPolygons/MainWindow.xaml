@@ -15,14 +15,15 @@
                         <MenuItem x:Name="mnuNew" Header="_Новый" Click="mnuNew_Click"/>
                         <Separator/>
                         <MenuItem x:Name="mnuSaveFile" Header="_Запись в файл..." Click="mnuSaveFile_Click"/>
-                        <MenuItem x:Name="mnuSaveBD" Header="_Запись в БД" Click="mnuSaveBD_Click"/>
                         <MenuItem x:Name="mnuLoadFile" Header="_Загрузка из файла..." Click="mnuLoadFile_Click"/>
-                        <MenuItem x:Name="mnuLoadBD" Header="_Загрузка из БД" Click="mnuLoadBD_Click"/>
+                        <MenuItem x:Name="mnuBD" Header="_База данных"/>
+                        <Separator/>
+                        <MenuItem x:Name="mnuPrint" Header="_Печать коллекции..." Click="mnuPrint_Click"/>
                         <Separator/>
                         <MenuItem x:Name="mnuExit" Header="_Выход" Click="mnuExit_Click"/>
                     </MenuItem>
                     <MenuItem Header="_Помощь">
-                        <MenuItem x:Name="mnuAbout" Header="_О программе"/>
+                        <MenuItem x:Name="mnuAbout" Header="_О программе..."/>
                     </MenuItem>
                 </Menu>
             </DockPanel>

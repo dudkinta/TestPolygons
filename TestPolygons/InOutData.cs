@@ -8,11 +8,16 @@ using System.Windows;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using Microsoft.Win32;
+using System.Data.SqlClient;
+using System.Data;
+using System.Windows.Controls;
 
 namespace TestPolygons
 {
     class InOutData
     {
+        private static DataTable dtCollectDB = new DataTable();
+
         public static bool saveToFile()
         {
             SaveFileDialog FDialog = new SaveFileDialog();
@@ -33,6 +38,7 @@ namespace TestPolygons
             }
             return true;
         }
+        
         public static bool loadFromFile()
         {
             OpenFileDialog FDialog = new OpenFileDialog();
@@ -53,24 +59,85 @@ namespace TestPolygons
             }
             return true;
         }
-        public static bool saveToDB()
+
+        public static bool saveToDB(int id, string name)
         {
-
             string pointsData = prepareData();
-            polygonDataSet polygonDS = new polygonDataSet();
-            polygonDataSet.CollectionsDataTable collectionsDT = polygonDS.Collections;
-            polygonDataSet.CollectionsRow collectionRow = collectionsDT.NewCollectionsRow();
-
-            collectionRow["name"] = "data1";
-            collectionRow["data"] = pointsData;
-            collectionsDT.AddCollectionsRow(collectionRow);
-
-            //this.personTableTableAdapter1.Update(collectionsDT);
-
+            try
+            {
+                if (id != -1)  // проверка существующей записи. если есть, то UPDATE если нет, то INSERT
+                {
+                    SqlCommand sqlCommand = new SqlCommand("SELECT id FROM [dbo].[collects] WHERE id=@id;");
+                    sqlCommand.Connection = new SqlConnection(DBconfig.dbConnect);
+                    sqlCommand.Parameters.Clear();
+                    sqlCommand.Parameters.AddWithValue("@id", id);
+                    SqlDataAdapter da = new SqlDataAdapter(sqlCommand);
+                    DataTable tmpRes = new DataTable();
+                    da.Fill(tmpRes);
+                    if (tmpRes.Rows.Count == 0)
+                    {
+                        id = -1;
+                    }
+                }
+                if (id == -1)  // INSERT в базу данных
+                {
+                    SqlCommand sqlCommand = new SqlCommand("INSERT INTO [dbo].[collects] ([name],[points_data]) VALUES (@name, @pointData);");
+                    sqlCommand.Connection = new SqlConnection(DBconfig.dbConnect);
+                    sqlCommand.Parameters.Clear();
+                    sqlCommand.Parameters.AddWithValue("@name", name);
+                    sqlCommand.Parameters.AddWithValue("@pointData", pointsData);
+                    sqlCommand.Connection.Open();
+                    sqlCommand.ExecuteNonQuery();
+                    sqlCommand.Connection.Close();
+                }
+                if (id != -1)  // UPDATE в базу данных
+                {
+                    SqlCommand sqlCommand = new SqlCommand("UPDATE [dbo].[collects] SET [name] = @name, [points_data] = @pointData WHERE id=@id;");
+                    sqlCommand.Connection = new SqlConnection(DBconfig.dbConnect);
+                    sqlCommand.Parameters.Clear();
+                    sqlCommand.Parameters.AddWithValue("@id", id);
+                    sqlCommand.Parameters.AddWithValue("@name", name);
+                    sqlCommand.Parameters.AddWithValue("@pointData", pointsData);
+                    sqlCommand.Connection.Open();
+                    sqlCommand.ExecuteNonQuery();
+                    sqlCommand.Connection.Close();
+                }
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show(e.Message);
+                return false;
+            }
             return true;
         }
-        public static bool loadFromDB()
+        
+        public static bool loadFromDB(int id)
         {
+            try
+            {
+                SqlCommand sqlCommand = new SqlCommand("SELECT TOP 1 * FROM [dbo].[collects] WHERE id=@id;");
+                sqlCommand.Connection = new SqlConnection(DBconfig.dbConnect);
+                sqlCommand.Parameters.Clear();
+                sqlCommand.Parameters.AddWithValue("@id", id);
+                SqlDataAdapter da = new SqlDataAdapter(sqlCommand);
+                DataTable tmpRes = new DataTable();
+                da.Fill(tmpRes);
+                if (tmpRes.Rows.Count == 0)
+                {
+                    return false;
+                }
+                else
+                {
+                        int pid = (int)tmpRes.Rows[0]["id"];
+                        string name = tmpRes.Rows[0]["name"].ToString();
+                        string points = tmpRes.Rows[0]["points_data"].ToString();
+                        restoreData(points);
+                }
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show(e.Message);
+            }
             return true;
         }
 
@@ -105,6 +172,42 @@ namespace TestPolygons
                 Elements.restorePolygonPoints(pgPoints, polygon);
                 Elements.polygons.Add(polygon);
                 Elements.addToCollect(polygon);
+            }
+        }
+
+        public static Dictionary<int, string> getCollectNamesFromDB()
+        {
+            Dictionary<int, string> res = new Dictionary<int, string>();
+            SqlCommand sqlCommand = new SqlCommand("SELECT * FROM [dbo].[collects];");
+            sqlCommand.Connection = new SqlConnection(DBconfig.dbConnect);
+            sqlCommand.Parameters.Clear();
+            try
+            {
+                SqlDataAdapter da = new SqlDataAdapter(sqlCommand);
+                dtCollectDB.Clear();
+                da.Fill(dtCollectDB);
+                for (int i = 0; i < dtCollectDB.Rows.Count; i++)
+                {
+                    int id = (int)dtCollectDB.Rows[i]["id"];
+                    string name = dtCollectDB.Rows[i]["name"].ToString();
+                    res.Add(id, name);
+                }
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show(e.Message);
+                return null;
+            }
+            return res;
+        }
+
+        public static void printPolygon(Canvas cnv, string description)
+        {
+            PrintDialog PDialog = new PrintDialog();
+            Nullable<bool> result = PDialog.ShowDialog();
+            if (result == true)
+            {
+                PDialog.PrintVisual(cnv, description);
             }
         }
     }
