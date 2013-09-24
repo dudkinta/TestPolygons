@@ -19,7 +19,7 @@ namespace TestPolygons
     public partial class NewCollectDB : Window
     {
         public string collectName = "";
-        public bool result;
+        public bool result = false;
         public NewCollectDB()
         {
             InitializeComponent();
@@ -34,13 +34,8 @@ namespace TestPolygons
 
         private void btCancel_Click_1(object sender, RoutedEventArgs e)
         {
-            result = true;
+            result = false;
             this.Close();
-        }
-
-        private void Window_Closing_1(object sender, System.ComponentModel.CancelEventArgs e)
-        {
-            result = true;
         }
     }
 }

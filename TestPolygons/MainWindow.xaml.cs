@@ -152,7 +152,7 @@ namespace TestPolygons
             rect.Points.Add(new Point(canvas.ActualWidth, 0));
             rect.Points.Add(new Point(canvas.ActualWidth, canvas.ActualHeight));
             rect.Points.Add(new Point(0, canvas.ActualHeight));
-            rect.Fill = System.Windows.Media.Brushes.LightSteelBlue;
+            rect.Fill = System.Windows.Media.Brushes.White;
             canvas.Children.Add(rect);
         }
 
@@ -166,6 +166,10 @@ namespace TestPolygons
             }
             canvas.Children.Add(Elements.line);
             canvas.Children.Add(Elements.currentPoint);
+            foreach (Line line in Elements.colorLine)
+            {
+                canvas.Children.Add(line);
+            }
         }
 
         private void updateBinding()
@@ -272,7 +276,10 @@ namespace TestPolygons
                 }
                 else
                 {
-                    btnToolPoly_Click(null, null);
+                    if (Elements.polygons.Count < 2)
+                    {
+                        btnToolPoly_Click(null, null);
+                    }
                 }
 
                 if (Tools.type == Tools.ToolType.polygon) // двигаем последний сегмент недостроенного полигона
@@ -287,6 +294,7 @@ namespace TestPolygons
                     if ((polygonId != -1) && (pId != -1))  // двигаем точку полигона если только выбран конкретный полигон и конкретная точка
                     {
                         Elements.movePolygonPoint(p, polygonId, pId);
+                        refreshCanvas();
                     }
                 }
             }

@@ -12,7 +12,11 @@ namespace TestPolygons
     static class Elements
     {
         public static Ellipse currentPoint = new Ellipse();  // маркер выбраной точки
+
         public static List<Polygon> polygons = new List<Polygon>();  // коллекция полигонов
+
+        public static List<Line> colorLine = new List<Line>();
+
         public static ObservableCollection<Canvas> plgns = new ObservableCollection<Canvas>();  // коллекция полигонов
         public static Polyline line = new Polyline(); // недорисованный полигон
 
@@ -106,8 +110,9 @@ namespace TestPolygons
             else
             {
                 sendToCollect(polygonId);
-                setEllipseProperty(p, Brushes.Red); // рисуем курсорчик
+                currentPoint = setEllipseProperty(currentPoint, p, Brushes.Red, 5); // рисуем курсорчик
             }
+            unionPolygon();
         }
 
         private static bool testListLines(Polygon pg)
@@ -185,6 +190,7 @@ namespace TestPolygons
                     return false;
                 }
                 sendToCollect(pg);
+                unionPolygon();
                 currentPoint.Stroke = Brushes.Transparent;
             }
             return true;
@@ -203,14 +209,15 @@ namespace TestPolygons
                     line.Points.RemoveAt(pCount - 1);
                     Polygon polygon = new Polygon();
                     polygon.Points = line.Points;
-                    SolidColorBrush sbrush = new SolidColorBrush(Color.FromArgb(200, 127, 127, 127));
+                    SolidColorBrush sbrush = new SolidColorBrush(Color.FromArgb(50, 127, 127, 127));
                     polygon.Fill = sbrush;
-                    polygon.StrokeThickness = 2;
-                    polygon.Stroke = Brushes.Blue;
+                    polygon.StrokeThickness = 0;
+                    polygon.Stroke = Brushes.Transparent;
                     polygons.Add(polygon);
                     line = new Polyline();
                     res = true;
                     addToCollect(polygon);
+                    unionPolygon();
                 }
             }
             return res;
@@ -298,6 +305,7 @@ namespace TestPolygons
                     return true;
                 }
                 sendToCollect(polygonId);
+                unionPolygon();
             }
             return false;
         }
@@ -308,13 +316,14 @@ namespace TestPolygons
             line.StrokeThickness = 2;
         }
 
-        private static void setEllipseProperty(Vector p, Brush color)
+        private static Ellipse setEllipseProperty(Ellipse el, Vector p, Brush color, int radius)
         {
-            currentPoint.Width = 10;
-            currentPoint.Height = 10;
-            currentPoint.StrokeThickness = 5;
-            currentPoint.Stroke = color;
-            currentPoint.Margin = new Thickness(p.x - 5, p.y - 5, 0, 0);
+            el.Width = radius * 2;
+            el.Height = radius * 2;
+            el.StrokeThickness = 5;
+            el.Stroke = color;
+            el.Margin = new Thickness(p.x - radius, p.y - radius, 0, 0);
+            return el;
         }
 
         public static Vector getPoint(Vector p, out int polygon, out int pNum, int radius, bool isPolygon)
@@ -332,7 +341,7 @@ namespace TestPolygons
                         {
                             pNum = j;
                             polygon = i;
-                            setEllipseProperty(ptv, Brushes.Red);
+                            currentPoint = setEllipseProperty(currentPoint, ptv, Brushes.Red, 5);
                             return ptv;
                         }
                     }
@@ -346,12 +355,12 @@ namespace TestPolygons
                     if ((ptv - p).Lenght < radius)
                     {
                         pNum = j;
-                        setEllipseProperty(ptv, Brushes.Green);
+                        currentPoint = setEllipseProperty(currentPoint, ptv, Brushes.Green, 5);
                         return ptv;
                     }
                 }
             }
-            setEllipseProperty(p, Brushes.Transparent);
+            currentPoint = setEllipseProperty(currentPoint, p, Brushes.Transparent, 5);
             return new Vector();
         }
 
@@ -450,16 +459,116 @@ namespace TestPolygons
             return result;
         }
 
-        private static void unionPolygon(Polygon pg1, Polygon pg2)
+        public static Dictionary<string, List<Vector>> findPointsCrossPolygons(List<Line> pg1, List<Line> pg2)
         {
-            //1) Найти все точки пересечения между ребрами полигонов А и В;
-            //2) Добавить их в качестве новых вершин в оба полигона А и В;
+            Dictionary<string, List<Vector>> res = new Dictionary<string, List<Vector>>();
+            res.Add("pg1", getCrossPoints(pg1, pg2));
+            res.Add("pg2", getCrossPoints(pg2, pg1));
+            return res;
+        }
+
+        private static List<Vector> getCrossPoints(List<Line> pg1, List<Line> pg2)
+        {
+
+            List<Vector> points = new List<Vector>();
+            for (int i = 0; i < pg1.Count; i++)
+            {
+                points.Add(new Vector(pg1[i].X1, pg1[i].Y1));
+                for (int j = 0; j < pg2.Count; j++)
+                {
+                    int crossFlag = -2;
+                    Vector cross = getCrossPoint(pg1[i], pg2[j], out crossFlag);
+                    if (crossFlag == 2)
+                    {
+                        points.Add(cross);
+                    }
+                }
+            }
+            return points;
+        }
+
+        private static List<Line> testSidesLine(List<Line> lines1, List<Line> lines2, int th, Brush br)
+        {
+            for (int i = 0; i < lines1.Count; i++)
+            {
+                //if ((getCountPoint(new Vector(lines1[i].X1, lines1[i].Y1), lines2)) && (getCountPoint(new Vector(lines1[i].X2, lines1[i].Y2), lines2)))
+                if (testRay(new Vector(lines1[i].X1, lines1[i].Y1), lines2))
+                {
+                    lines1[i].Stroke = br;
+                    lines1[i].StrokeThickness = th;
+                    lines1[i].Tag = 1;
+                }
+                else
+                {
+                    lines1[i].Stroke = Brushes.Transparent;
+                    lines1[i].StrokeThickness = 0;
+                    lines1[i].Tag = 2;
+                }
+            }
+            return lines1;
+        }
+
+        private static bool testRay(Vector p, List<Line> lines)
+        {
+            double maxX = double.MaxValue;
+            for (int i = 0; i < lines.Count; i++)
+            {
+                maxX = (lines[i].X1 > maxX) ? lines[i].X1 : maxX;
+                maxX = (lines[i].X2 > maxX) ? lines[i].X2 : maxX;
+            }
+            maxX++;
+            Line ray = getLine(new Vector(maxX, p.y+1), p);
+            int count = 0;
+            for (int i = 0; i < lines.Count; i++)
+            {
+                int flag = -2;
+                Vector cross = getCrossPoint(ray, lines[i], out flag);
+                if (flag == 2) { count++; }
+            }
+            return (count % 2 == 1);
+        }
+
+        private static bool getCountPoint(Vector p, List<Line> lines)
+        {
+            int count = 0;
+            foreach (Line l in lines)
+            {
+                p.x = Math.Round(p.x, 0);
+                p.y = Math.Round(p.y, 0);
+                l.X1 = Math.Round(l.X1, 0);
+                l.X2 = Math.Round(l.X2, 0);
+                l.Y1 = Math.Round(l.Y1, 0);
+                l.Y2 = Math.Round(l.Y2, 0);
+                if (((p.x == l.X1) && (p.y == l.Y1)) || ((p.x == l.X2) && (p.y == l.Y2))) { count++; }
+            }
+            return (count > 0);
+        }
+
+        private static void unionPolygon()
+        {
+            //1) + Найти все точки пересечения между ребрами полигонов А и В;
+            //2) + Добавить их в качестве новых вершин в оба полигона А и В;
             //3) Разметить полигоны А и В: каждое ребро из А пометить флагом I(inside), если оно внутри полигона В, и O(outside), если оно снаружи. Аналогично для полигона В.
             //4) Теперь в зависимости от вида булевой операции:
             //а) объединение: удалить из А и В все ребра помеченные как I;
             //б) пересечение: удалить из А и В все ребра помеченные как O;
             //в) вычитание (А-В): удалить из А все I, а из В все O.
             //5) Слить то что осталось от А и В в один результирующий полигон.
+            if (polygons.Count == 2)
+            {
+                Dictionary<string, List<Vector>> pointsPoligons = findPointsCrossPolygons(getLinesPolygon(polygons[0]), getLinesPolygon(polygons[1]));
+                Polygon newPG1 = new Polygon();
+                restorePolygonPoints(pointsPoligons["pg1"], newPG1);
+                Polygon newPG2 = new Polygon();
+                restorePolygonPoints(pointsPoligons["pg2"], newPG2);
+                List<Line> lines1 = getLinesPolygon(newPG1);
+                List<Line> lines2 = getLinesPolygon(newPG2);
+                lines1 = testSidesLine(lines1, lines2, 8, Brushes.Red);
+                lines2 = testSidesLine(lines2, lines1, 3, Brushes.Blue);
+                colorLine.Clear();
+                colorLine.AddRange(lines1);
+                colorLine.AddRange(lines2);
+            }
         }
     }
 }
