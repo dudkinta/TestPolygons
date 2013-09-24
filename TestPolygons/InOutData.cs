@@ -55,7 +55,18 @@ namespace TestPolygons
         }
         public static bool saveToDB()
         {
-            
+
+            string pointsData = prepareData();
+            polygonDataSet polygonDS = new polygonDataSet();
+            polygonDataSet.CollectionsDataTable collectionsDT = polygonDS.Collections;
+            polygonDataSet.CollectionsRow collectionRow = collectionsDT.NewCollectionsRow();
+
+            collectionRow["name"] = "data1";
+            collectionRow["data"] = pointsData;
+            collectionsDT.AddCollectionsRow(collectionRow);
+
+            //this.personTableTableAdapter1.Update(collectionsDT);
+
             return true;
         }
         public static bool loadFromDB()
