@@ -124,7 +124,7 @@ namespace TestPolygons
                 for (int j = 0; j < lines.Count; j++)
                 {
                     int crossFlag = -2;
-                    getCrossPoint(lines[i], lines[j], out crossFlag);
+                    getCrossPoint(lines[i], lines[j], out crossFlag, false);
                     cross = cross || (crossFlag == 2);
                 }
             }
@@ -379,7 +379,7 @@ namespace TestPolygons
                     Line l1 = getLine(a, b);
                     Line l2 = getLine(c, d);
                     int crossFlag = -2;
-                    Vector cross = getCrossPoint(l1, l2, out crossFlag);
+                    Vector cross = getCrossPoint(l1, l2, out crossFlag, false);
                     if (crossFlag == 2)
                     {
                         if ((cross - c).Lenght < (res - c).Lenght)
@@ -419,7 +419,7 @@ namespace TestPolygons
             return double.MaxValue;
         }
 
-        public static Vector getCrossPoint(Line l1, Line l2, out int crossFlag)  // тут мне помогал гугль и Крамер
+        public static Vector getCrossPoint(Line l1, Line l2, out int crossFlag, bool hard)  // тут мне помогал гугль и Крамер
         {
             crossFlag = -2;
             Vector result = new Vector();
@@ -451,9 +451,19 @@ namespace TestPolygons
                 double x22 = Math.Max(l1.X1, l1.X2);
                 double y21 = Math.Min(l1.Y1, l1.Y2);
                 double y22 = Math.Max(l1.Y1, l1.Y2);
-                if ((result.x > x11) && (result.x < x12) && (result.y > y11) && (result.y < y12) && (result.x > x21) && (result.x < x22) && (result.y > y21) && (result.y < y22))
+                if (!hard)
                 {
-                    crossFlag = 2;  // отрезки имеют точку пересечения
+                    if ((result.x > x11) && (result.x < x12) && (result.y > y11) && (result.y < y12) && (result.x > x21) && (result.x < x22) && (result.y > y21) && (result.y < y22))
+                    {
+                        crossFlag = 2;  // отрезки имеют точку пересечения
+                    }
+                }
+                else
+                {
+                    if ((result.x >= x11) && (result.x <= x12) && (result.y >= y11) && (result.y <= y12) && (result.x >= x21) && (result.x <= x22) && (result.y >= y21) && (result.y <= y22))
+                    {
+                        crossFlag = 2;  // отрезки имеют точку пересечения
+                    }
                 }
             }
             return result;
@@ -477,7 +487,7 @@ namespace TestPolygons
                 for (int j = 0; j < pg2.Count; j++)
                 {
                     int crossFlag = -2;
-                    Vector cross = getCrossPoint(pg1[i], pg2[j], out crossFlag);
+                    Vector cross = getCrossPoint(pg1[i], pg2[j], out crossFlag, false);
                     if (crossFlag == 2)
                     {
                         points.Add(cross);
@@ -492,7 +502,7 @@ namespace TestPolygons
             for (int i = 0; i < lines1.Count; i++)
             {
                 //if ((getCountPoint(new Vector(lines1[i].X1, lines1[i].Y1), lines2)) && (getCountPoint(new Vector(lines1[i].X2, lines1[i].Y2), lines2)))
-                if (testRay(new Vector(lines1[i].X1, lines1[i].Y1), lines2))
+                if (testRay(new Vector(lines1[i].X1, lines1[i].Y1), lines2) && testRay(new Vector(lines1[i].X2, lines1[i].Y2), lines2))
                 {
                     lines1[i].Stroke = br;
                     lines1[i].StrokeThickness = th;
@@ -510,19 +520,12 @@ namespace TestPolygons
 
         private static bool testRay(Vector p, List<Line> lines)
         {
-            double maxX = double.MaxValue;
-            for (int i = 0; i < lines.Count; i++)
-            {
-                maxX = (lines[i].X1 > maxX) ? lines[i].X1 : maxX;
-                maxX = (lines[i].X2 > maxX) ? lines[i].X2 : maxX;
-            }
-            maxX++;
-            Line ray = getLine(new Vector(maxX, p.y+1), p);
+            Line ray = getLine(new Vector(-256, -100), p);
             int count = 0;
             for (int i = 0; i < lines.Count; i++)
             {
                 int flag = -2;
-                Vector cross = getCrossPoint(ray, lines[i], out flag);
+                Vector cross = getCrossPoint(ray, lines[i], out flag, true);
                 if (flag == 2) { count++; }
             }
             return (count % 2 == 1);
