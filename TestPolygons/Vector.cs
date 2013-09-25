@@ -6,7 +6,7 @@ using System.Windows;
 
 namespace TestPolygons
 {
-    public class Vector   // класс был написан для другого проекта поэтому много лишнего. Аналогичный класс в С# чем то непонравился, но чем именно уже не помню :)
+    public class Vector : IComparable<Vector>   // класс был написан для другого проекта поэтому много лишнего. Аналогичный класс в С# чем то непонравился, но чем именно уже не помню :)
     {
         public double x;
         public double y;
@@ -32,6 +32,22 @@ namespace TestPolygons
         {
             this.x = p.x;
             this.y = p.y;
+        }
+
+        public int CompareTo(Vector b)
+        {
+            if (this.x < b.x)
+                return -1;
+            if (this.x > b.x)
+                return 1;
+            else
+            {
+                if (this.y < b.y)
+                    return -1;
+                if (this.y > b.y)
+                    return 1;
+            }
+            return 0;
         }
 
         public override bool Equals(System.Object obj)

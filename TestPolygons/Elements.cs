@@ -6,18 +6,22 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
+using System.Linq;
 
 namespace TestPolygons
 {
     static class Elements
     {
+        public static string debug = "";
+
         public static Ellipse currentPoint = new Ellipse();  // маркер выбраной точки
 
         public static List<Polygon> polygons = new List<Polygon>();  // коллекция полигонов
 
-        public static List<Line> colorLine = new List<Line>();
+        public static List<Line> unionLines = new List<Line>();  // линии объединенного полигона
 
         public static ObservableCollection<Canvas> plgns = new ObservableCollection<Canvas>();  // коллекция полигонов
+
         public static Polyline line = new Polyline(); // недорисованный полигон
 
         public static void addPoint(Vector p)
@@ -483,49 +487,68 @@ namespace TestPolygons
             List<Vector> points = new List<Vector>();
             for (int i = 0; i < pg1.Count; i++)
             {
-                points.Add(new Vector(pg1[i].X1, pg1[i].Y1));
+                List<Vector> range = new List<Vector>();
                 for (int j = 0; j < pg2.Count; j++)
                 {
                     int crossFlag = -2;
-                    Vector cross = getCrossPoint(pg1[i], pg2[j], out crossFlag, false);
+                    Vector cross = getCrossPoint(pg1[i], pg2[j], out crossFlag, true);
                     if (crossFlag == 2)
                     {
-                        points.Add(cross);
+                        range.Add(cross);
                     }
                 }
+                range = sortPoints(new Vector(pg1[i].X1, pg1[i].Y1), new Vector(pg1[i].X2, pg1[i].Y2), range);
+                points.Add(new Vector(pg1[i].X1, pg1[i].Y1));
+                points.AddRange(range);
             }
             return points;
         }
 
-        private static List<Line> testSidesLine(List<Line> lines1, List<Line> lines2, int th, Brush br)
+        private static List<Vector> sortPoints(Vector start, Vector end, List<Vector> points)
+        {
+            List<Vector> res = new List<Vector>();
+            points.Sort();
+            if (start.x > end.x)
+            {
+                points.Reverse();
+            }
+            res.AddRange(points);
+            return res;
+        }
+
+        private static List<Line> testSidesLine(List<Line> lines1, List<Line> lines2)
         {
             for (int i = 0; i < lines1.Count; i++)
             {
-                //if ((getCountPoint(new Vector(lines1[i].X1, lines1[i].Y1), lines2)) && (getCountPoint(new Vector(lines1[i].X2, lines1[i].Y2), lines2)))
-                if (testRay(new Vector(lines1[i].X1, lines1[i].Y1), lines2) && testRay(new Vector(lines1[i].X2, lines1[i].Y2), lines2))
+                Vector centerPoint = getCenterPoint(lines1[i]);
+                if (testRay(centerPoint, lines2))
                 {
-                    lines1[i].Stroke = br;
-                    lines1[i].StrokeThickness = th;
-                    lines1[i].Tag = 1;
+                    lines1[i].Tag = true;
                 }
                 else
                 {
-                    lines1[i].Stroke = Brushes.Transparent;
-                    lines1[i].StrokeThickness = 0;
-                    lines1[i].Tag = 2;
+                    lines1[i].Tag = false;
                 }
             }
             return lines1;
         }
 
+        private static Vector getCenterPoint(Line line)
+        {
+            Vector res = new Vector();
+            res.x = (line.X1 + line.X2) / 2;
+            res.y = (line.Y1 + line.Y2) / 2;
+            return res;
+        }
+
         private static bool testRay(Vector p, List<Line> lines)
         {
-            Line ray = getLine(new Vector(-256, -100), p);
+            Line ray = getLine(p, new Vector(-200, -200));
             int count = 0;
             for (int i = 0; i < lines.Count; i++)
             {
                 int flag = -2;
-                Vector cross = getCrossPoint(ray, lines[i], out flag, true);
+                Vector cross = getCrossPoint(ray, lines[i], out flag, false);
                 if (flag == 2) { count++; }
             }
             return (count % 2 == 1);
@@ -547,11 +570,24 @@ namespace TestPolygons
             return (count > 0);
         }
 
+        private static List<Line> deleteFlag(bool flag, List<Line> lines)
+        {
+            List<Line> res = new List<Line>();
+            foreach (Line line in lines)
+            {
+                if ((bool)line.Tag != flag)  // удаляем если линия помечена флагом
+                {
+                    res.Add(line);
+                }
+            }
+            return res;
+        }
+
         private static void unionPolygon()
         {
             //1) + Найти все точки пересечения между ребрами полигонов А и В;
             //2) + Добавить их в качестве новых вершин в оба полигона А и В;
-            //3) Разметить полигоны А и В: каждое ребро из А пометить флагом I(inside), если оно внутри полигона В, и O(outside), если оно снаружи. Аналогично для полигона В.
+            //3) + Разметить полигоны А и В: каждое ребро из А пометить флагом I(inside), если оно внутри полигона В, и O(outside), если оно снаружи. Аналогично для полигона В.
             //4) Теперь в зависимости от вида булевой операции:
             //а) объединение: удалить из А и В все ребра помеченные как I;
             //б) пересечение: удалить из А и В все ребра помеченные как O;
@@ -566,11 +602,21 @@ namespace TestPolygons
                 restorePolygonPoints(pointsPoligons["pg2"], newPG2);
                 List<Line> lines1 = getLinesPolygon(newPG1);
                 List<Line> lines2 = getLinesPolygon(newPG2);
-                lines1 = testSidesLine(lines1, lines2, 8, Brushes.Red);
-                lines2 = testSidesLine(lines2, lines1, 3, Brushes.Blue);
-                colorLine.Clear();
-                colorLine.AddRange(lines1);
-                colorLine.AddRange(lines2);
+                lines1 = testSidesLine(lines1, lines2);  // 
+                lines2 = testSidesLine(lines2, lines1);
+                
+                //lines1 = deleteFlag(true, lines1);  // объединение
+                //lines2 = deleteFlag(true, lines2);  //  
+                lines1 = deleteFlag(false, lines1);  // пересечение
+                lines2 = deleteFlag(false, lines2);  // 
+                unionLines.Clear();
+                unionLines.AddRange(lines1);
+                unionLines.AddRange(lines2);
+                for (int i = 0; i < unionLines.Count; i++)
+                {
+                    unionLines[i].StrokeThickness = 5;
+                    unionLines[i].Stroke = new SolidColorBrush(Color.FromArgb(127, 0, 255, 0));
+                }
             }
         }
     }

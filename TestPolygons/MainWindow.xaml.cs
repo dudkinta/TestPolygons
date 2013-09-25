@@ -166,7 +166,7 @@ namespace TestPolygons
             }
             canvas.Children.Add(Elements.line);
             canvas.Children.Add(Elements.currentPoint);
-            foreach (Line line in Elements.colorLine)
+            foreach (Line line in Elements.unionLines)
             {
                 canvas.Children.Add(line);
             }
@@ -295,6 +295,7 @@ namespace TestPolygons
                     {
                         Elements.movePolygonPoint(p, polygonId, pId);
                         refreshCanvas();
+                        lbHint.Content = Elements.debug;
                     }
                 }
             }
