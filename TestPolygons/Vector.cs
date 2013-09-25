@@ -143,6 +143,7 @@ namespace TestPolygons
             return ((a.x != b.x) || (a.y != b.y));
         }
         #endregion
+
         #endregion
         #region Методы
         private double LenghtPow2
@@ -178,9 +179,12 @@ namespace TestPolygons
         {
             return new Vector(Math.Round(this.x, i), Math.Round(this.y, i));
         }
-        public Point getPoint()
+        public Point getPoint
         {
-            return new Point(this.x, this.y);
+            get
+            {
+                return new Point(this.x, this.y);
+            }
         }
         public bool isNan
         {

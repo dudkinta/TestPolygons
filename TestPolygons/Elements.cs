@@ -12,20 +12,18 @@ namespace TestPolygons
 {
     static class Elements
     {
-        public static string debug = "";
-
+        #region Объявление переменных
+        public static string debug = "";  // для вывода информации в lbHint на StatusBar главного окна
         public static Ellipse currentPoint = new Ellipse();  // маркер выбраной точки
-
         public static List<Polygon> polygons = new List<Polygon>();  // коллекция полигонов
-
-        public static ObservableCollection<Canvas> plgns = new ObservableCollection<Canvas>();  // коллекция полигонов
-
+        public static ObservableCollection<Canvas> plgns = new ObservableCollection<Canvas>();  // коллекция полигонов для маленьких картинок
         public static List<Polygon> polyPolygon = new List<Polygon>();
-        public static List<Line> unionLines = new List<Line>();
-
+        public static List<VLine> unionLines = new List<VLine>();  // полигон объединенный в виде массива линиц
         public static Polyline line = new Polyline(); // недорисованный полигон
+        #endregion
 
-        public static void addPoint(Vector p)
+        #region Добавление элементов
+        public static void addPoint(Vector p) // функци добавления сегмента к недостроенному полигону
         {
             line.StrokeThickness = 0;
             p = testCrossLine(p);
@@ -36,10 +34,11 @@ namespace TestPolygons
             {
                 if (line.Points.Count == 0)
                 {
-                    newLineProperty();
-                    line.Points.Add(p.getPoint());
+                    line.Stroke = Brushes.Black;
+                    line.StrokeThickness = 2;
+                    line.Points.Add(p.getPoint);
                 }
-                line.Points.Add(p.getPoint());
+                line.Points.Add(p.getPoint);
             }
             if (ptId == 0)
             {
@@ -48,160 +47,7 @@ namespace TestPolygons
             line.StrokeThickness = 2;
         }
 
-        public static bool moveLastSegment(Vector p)
-        {
-            bool res = false;
-            int pCount = line.Points.Count;
-            if (pCount >= 1)
-            {
-                Vector testPoint = new Vector(line.Points[pCount - 1]);
-                #region костыль
-                if (testPoint.x == p.x) // исключает протыкание линии если новая линия горизонталь или вертикаль
-                {
-                    p.x += 0.1;
-                }
-                if (testPoint.y == p.y)
-                {
-                    p.y += 0.1;
-                }
-                #endregion
-                line.Points.RemoveAt(pCount - 1);
-                line.Points.Add(p.getPoint());
-                line.StrokeThickness = 0;
-                Vector p1 = testCrossLine(p);
-                res = (p == p1);
-                #region костыль
-                if (!res)  // для того что бы точка находилась не на линии, а то самоперечечения становятся возможны
-                {
-                    double delta = 1;
-                    if (p1.x < p.x)
-                    {
-                        p1.x -= delta;
-                    }
-                    else { p1.x += delta; }
-                    if (p1.y < p.y)
-                    {
-                        p1.y -= delta;
-                    }
-                    else { p1.y += delta; }
-                }
-                #endregion
-                line.Points.RemoveAt(pCount - 1);
-                line.Points.Add(p1.getPoint());
-                line.StrokeThickness = 2;
-            }
-            return res;
-        }
-
-        public static void movePolygonPoint(Vector p, int polygonId, int centerId)
-        {
-            List<Vector> points = savePolygonPoints(polygons[polygonId]);
-            #region костыль
-            // опять костыль с протыканием вертикали и горизонтали
-            if (polygons[polygonId].Points[centerId].X == p.x)
-            {
-                p.x += 0.1;
-            }
-            if (polygons[polygonId].Points[centerId].Y == p.y)
-            {
-                p.y += 0.1;
-            }
-            #endregion
-            polygons[polygonId].Points[centerId] = new Point(p.x, p.y);  // перемещаем точку
-            if (testListLines(polygons[polygonId]))  // если пересечения восстанавливаем точки
-            {
-                restorePolygonPoints(points, polygons[polygonId]);
-            }
-            else
-            {
-                sendToCollect(polygonId);
-                currentPoint = setEllipseProperty(currentPoint, p, Brushes.Red, 5); // рисуем курсорчик
-            }
-            unionPolygon();
-        }
-
-        private static bool testListLines(Polygon pg)
-        {
-            List<Line> lines = getLinesPolygon(pg);
-            bool cross = false;  // флаг пересечений  (false - нет пересечений)
-            for (int i = 0; i < lines.Count; i++)  // проверяем каждую линию с каждой (самый медленный алгоритм и самый простой)
-            {
-                for (int j = 0; j < lines.Count; j++)
-                {
-                    int crossFlag = -2;
-                    getCrossPoint(lines[i], lines[j], out crossFlag, false);
-                    cross = cross || (crossFlag == 2);
-                }
-            }
-            return cross;
-        }
-
-        public static List<Vector> savePolygonPoints(Polygon pg)
-        {
-            List<Vector> points = new List<Vector>(); // список точек полигона
-            for (int i = 0; i < pg.Points.Count; i++)  // сохраняем точки для восстановления в случае необходимости
-            {
-                points.Add(new Vector(pg.Points[i]));
-            }
-            return points;
-        }
-
-        public static void restorePolygonPoints(List<Vector> points, Polygon pg)
-        {
-            pg.Points.Clear();
-            for (int i = 0; i < points.Count; i++)
-            {
-                pg.Points.Add(points[i].getPoint());
-            }
-        }
-
-        private static List<Line> getLinesPolygon(Polygon pg)
-        {
-            List<Line> lines = new List<Line>();  // список линий полигона
-            for (int i = 0; i < pg.Points.Count; i++) // составляем список линий полигона
-            {
-                int leftId = (i == pg.Points.Count - 1) ? 0 : i + 1;
-                Line leftLine = getLine(new Vector(pg.Points[i]), new Vector(pg.Points[leftId]));  // левая линия от точки
-                lines.Add(leftLine);
-            }
-            return lines;
-        }
-
-        public static void deleteLastPoint()
-        {
-            int pCount = line.Points.Count;
-            if (pCount > 0)
-            {
-                line.Points.RemoveAt(pCount - 1);
-            }
-        }
-
-        public static bool deletePolygonPoint(int pg, int pId)
-        {
-            if (polygons[pg].Points.Count == 3)
-            {
-                polygons.RemoveAt(pg);
-                plgns.RemoveAt(pg);
-                return true;
-            }
-            else
-            {
-
-                List<Vector> points = savePolygonPoints(polygons[pg]);
-                polygons[pg].Points.RemoveAt(pId);  // удаляем точку
-                if (testListLines(polygons[pg]))  // если пересечения восстанавливаем точки
-                {
-                    restorePolygonPoints(points, polygons[pg]);
-                    return false;
-                }
-                sendToCollect(pg);
-                unionPolygon();
-                currentPoint.Stroke = Brushes.Transparent;
-            }
-            return true;
-        }
-
-        public static bool addPolygon()
+        public static bool addPolygon() // фунция конвертирования недостроенного полигона в построенный и добавление его в коллекцию
         {
             bool res = false;
             int pCount = line.Points.Count;
@@ -228,34 +74,150 @@ namespace TestPolygons
             return res;
         }
 
-        public static void addToCollect(Polygon pg)
+        public static void addToCollect(Polygon pg) // функция создания и добавления в коллекцию миниатюр
         {
-            List<Vector> points = normalizePoints(savePolygonPoints(pg), 130, 130);
+            List<Vector> points = normalizePoints(savePolygonPoints(pg), 130, 130); //нормализуем точки полигона для того что бы он влез в миниатюру без искажений
             Polygon newPG = new Polygon();
-            restorePolygonPoints(points, newPG);
-            SolidColorBrush sbrush = new SolidColorBrush(Color.FromArgb(255, 127, 127, 127));
-            newPG.Fill = sbrush;
-            newPG.StrokeThickness = 1;
-            newPG.Stroke = Brushes.Blue;
+            restorePolygonPoints(points, newPG); // восстанавливаем нормализованные точки в новый полигон
+            newPG = setPolygonProperty(newPG);
             Canvas cnv = new Canvas();
             cnv.Children.Add(newPG);
-            plgns.Add(cnv);
+            plgns.Add(cnv); // и добавляем в коллекцию
         }
 
-        private static void sendToCollect(int pg)
+        private static void sendToCollect(int pg) // функция обновления полигона в коллекции миниатюр
         {
             List<Vector> points = normalizePoints(savePolygonPoints(polygons[pg]), 130, 130);
             Polygon newPG = new Polygon();
             restorePolygonPoints(points, newPG);
-            SolidColorBrush sbrush = new SolidColorBrush(Color.FromArgb(255, 127, 127, 127));
-            newPG.Fill = sbrush;
-            newPG.StrokeThickness = 1;
-            newPG.Stroke = Brushes.Blue;
+            newPG = setPolygonProperty(newPG);
             plgns[pg].Children.Clear();
             plgns[pg].Children.Add(newPG);
         }
 
-        private static List<Vector> normalizePoints(List<Vector> points, int normX, int normY)
+        public static bool addPointPolygon(Vector p) // функция добавление точки в построенный полигон с проверкой самопересечения
+        {
+            double minLenght = double.MaxValue;
+            int polygonId = -1;
+            int lineId = -1;
+            for (int i = 0; i < polygons.Count; i++)
+            {
+                List<VLine> lines = getLinesPolygon(polygons[i]);
+                for (int j = 0; j < lines.Count; j++)
+                {
+                    double len = getLenght(lines[j], p);
+                    if (len < minLenght)
+                    {
+                        minLenght = len;
+                        polygonId = i;
+                        lineId = j;
+                    }
+                }
+            }
+            if (polygonId != -1)
+            {
+                List<Vector> points = savePolygonPoints(polygons[polygonId]);
+                polygons[polygonId].Points.Insert(lineId + 1, p.getPoint); // добавляем точку
+                if (testListLines(polygons[polygonId]))  // если пересечения восстанавливаем точки
+                {
+                    restorePolygonPoints(points, polygons[polygonId]);
+                    return true;
+                }
+                sendToCollect(polygonId);
+                unionPolygon();
+            }
+            return false;
+        }
+        #endregion
+
+        #region Удаление элементов
+        public static void deleteLastPoint()  // функция удаления последней точки недостроенного полигона
+        {
+            int pCount = line.Points.Count;
+            if (pCount > 0)
+            {
+                line.Points.RemoveAt(pCount - 1);
+            }
+        }
+
+        public static bool deletePolygonPoint(int pg, int pId) // фунция удаления точки полигона с проверкой самопересечений
+        {
+            if (polygons[pg].Points.Count == 3)
+            {
+                polygons.RemoveAt(pg);
+                plgns.RemoveAt(pg);
+                return true;
+            }
+            else
+            {
+                List<Vector> points = savePolygonPoints(polygons[pg]);
+                polygons[pg].Points.RemoveAt(pId);  // удаляем точку
+                if (testListLines(polygons[pg]))  // если пересечения восстанавливаем точки
+                {
+                    restorePolygonPoints(points, polygons[pg]);
+                    return false;
+                }
+                sendToCollect(pg);
+                unionPolygon();
+                currentPoint.Stroke = Brushes.Transparent;
+            }
+            return true;
+        }
+        #endregion
+
+        #region Модификация элементов
+        public static bool moveLastSegment(Vector p)  // функция проверки возможности перемещать последний сегмент недостроенного полигона
+        {
+            bool res = false;
+            int pCount = line.Points.Count;
+            if (pCount >= 1)
+            {
+                Vector testPoint = new Vector(line.Points[pCount - 1]);
+                line.Points.RemoveAt(pCount - 1);
+                line.Points.Add(p.getPoint);
+                line.StrokeThickness = 0;
+                Vector p1 = testCrossLine(p);
+                res = (p == p1);
+                #region костыль
+                if (!res)  // для того что бы точка находилась не на линии, а то самоперечечения становятся возможны
+                {
+                    double delta = 1;
+                    if (p1.x < p.x)
+                    {
+                        p1.x -= delta;
+                    }
+                    else { p1.x += delta; }
+                    if (p1.y < p.y)
+                    {
+                        p1.y -= delta;
+                    }
+                    else { p1.y += delta; }
+                }
+                #endregion
+                line.Points.RemoveAt(pCount - 1);
+                line.Points.Add(p1.getPoint);
+                line.StrokeThickness = 2;
+            }
+            return res;
+        }
+
+        public static void movePolygonPoint(Vector p, int polygonId, int centerId)  // функция проверки возможности перемещения точки полигона
+        {
+            List<Vector> points = savePolygonPoints(polygons[polygonId]);
+            polygons[polygonId].Points[centerId] = new Point(p.x, p.y);  // перемещаем точку
+            if (testListLines(polygons[polygonId]))  // если пересечения восстанавливаем точки
+            {
+                restorePolygonPoints(points, polygons[polygonId]);
+            }
+            else
+            {
+                sendToCollect(polygonId);
+                currentPoint = setEllipseProperty(currentPoint, p, Brushes.Red, 5); // рисуем курсорчик
+            }
+            unionPolygon();
+        }
+
+        private static List<Vector> normalizePoints(List<Vector> points, int normX, int normY) // нормализация точек полигона для вписывания в миниатюру
         {
             double minX = double.MaxValue;
             double maxX = double.MinValue;
@@ -280,58 +242,44 @@ namespace TestPolygons
             }
             return points;
         }
+        #endregion
 
-        public static bool addPointPolygon(Vector p)
+        #region Конвертация объектов в линии и точки
+        public static List<Vector> savePolygonPoints(Polygon pg)  // функция конвертирования полигона в коллекцию точек
         {
-            double minLenght = double.MaxValue;
-            int polygonId = -1;
-            int lineId = -1;
-            for (int i = 0; i < polygons.Count; i++)
+            List<Vector> points = new List<Vector>(); // список точек полигона
+            for (int i = 0; i < pg.Points.Count; i++)  // сохраняем точки для восстановления в случае необходимости
             {
-                List<Line> lines = getLinesPolygon(polygons[i]);
-                for (int j = 0; j < lines.Count; j++)
-                {
-                    double len = getLenght(lines[j], p);
-                    if (len < minLenght)
-                    {
-                        minLenght = len;
-                        polygonId = i;
-                        lineId = j;
-                    }
-                }
+                points.Add(new Vector(pg.Points[i]));
             }
-            if (polygonId != -1)
+            return points;
+        }
+
+        public static Polygon restorePolygonPoints(List<Vector> points, Polygon pg) // восстанавливаем точки полигона из коллекции
+        {
+            pg.Points.Clear();
+            for (int i = 0; i < points.Count; i++)
             {
-                List<Vector> points = savePolygonPoints(polygons[polygonId]);
-                polygons[polygonId].Points.Insert(lineId + 1, p.getPoint()); // добавляем точку
-                if (testListLines(polygons[polygonId]))  // если пересечения восстанавливаем точки
-                {
-                    restorePolygonPoints(points, polygons[polygonId]);
-                    return true;
-                }
-                sendToCollect(polygonId);
-                unionPolygon();
+                pg.Points.Add(points[i].getPoint);
             }
-            return false;
+            return pg;
         }
 
-        private static void newLineProperty()
+        private static List<VLine> getLinesPolygon(Polygon pg) // функция конвертирования полигона в коллекцию линий
         {
-            line.Stroke = Brushes.Black;
-            line.StrokeThickness = 2;
+            List<VLine> lines = new List<VLine>();  // список линий полигона
+            for (int i = 0; i < pg.Points.Count; i++) // составляем список линий полигона
+            {
+                int leftId = (i == pg.Points.Count - 1) ? 0 : i + 1;
+                VLine leftLine = new VLine(new Vector(pg.Points[i]), new Vector(pg.Points[leftId]));  // левая линия от точки
+                lines.Add(leftLine);
+            }
+            return lines;
         }
+        #endregion
 
-        private static Ellipse setEllipseProperty(Ellipse el, Vector p, Brush color, int radius)
-        {
-            el.Width = radius * 2;
-            el.Height = radius * 2;
-            el.StrokeThickness = 5;
-            el.Stroke = color;
-            el.Margin = new Thickness(p.x - radius, p.y - radius, 0, 0);
-            return el;
-        }
-
-        public static Vector getPoint(Vector p, out int polygon, out int pNum, int radius, bool isPolygon)
+        #region Поисковые и проверочные функции
+        public static Vector getPoint(Vector p, out int polygon, out int pNum, int radius, bool isPolygon) // поиск объекта к которому относится точка на экране
         {
             polygon = -1;
             pNum = -1;
@@ -368,8 +316,21 @@ namespace TestPolygons
             currentPoint = setEllipseProperty(currentPoint, p, Brushes.Transparent, 5);
             return new Vector();
         }
+        
+        private static bool testListLines(Polygon pg)  // вспомогательная функция для проверки самопересечений полигона (добавление, удаление и перемещение вершины полигона)
+        {
+            List<VLine> lines = getLinesPolygon(pg);  // разбиваем на линии и проверяем пересечение каждой линии со всеми другими в полигоне
+            for (int i = 0; i < lines.Count; i++)
+            {
+                for (int j = 0; j < lines.Count; j++)
+                {
+                    if (VGeometry.crossPoint(lines[i], lines[j])) { return true; }
+                }
+            }
+            return false;
+        }
 
-        private static Vector testCrossLine(Vector r)
+        private static Vector testCrossLine(Vector r)  // тестирование последнего сегмента на самоперечесение
         {
             Vector res = new Vector(r);
             int pCount = line.Points.Count;
@@ -377,16 +338,12 @@ namespace TestPolygons
             {
                 for (int i = 0; i < pCount - 1; i++)
                 {
-                    Vector a = new Vector(line.Points[i]);
-                    Vector b = new Vector(line.Points[i + 1]);
-                    Vector c = new Vector(line.Points[pCount - 2]);
-                    Vector d = new Vector(line.Points[pCount - 1]);
-                    Line l1 = getLine(a, b);
-                    Line l2 = getLine(c, d);
-                    int crossFlag = -2;
-                    Vector cross = getCrossPoint(l1, l2, out crossFlag, false);
-                    if (crossFlag == 2)
+                    Vector a = new Vector(line.Points[i]), b = new Vector(line.Points[i + 1]);
+                    Vector c = new Vector(line.Points[pCount - 2]), d = new Vector(line.Points[pCount - 1]);
+                    VLine l1 = new VLine(a, b), l2 = new VLine(c, d);
+                    if (VGeometry.crossPoint(l1, l2))
                     {
+                        Vector cross = VGeometry.crossProduct;
                         if ((cross - c).Lenght < (res - c).Lenght)
                         {
                             res = cross;
@@ -397,22 +354,10 @@ namespace TestPolygons
             return res;
         }
 
-        private static Line getLine(Vector p1, Vector p2)
+        private static double getLenght(VLine line, Vector c) // вычисление расстояние от точки до отрезка
         {
-            Line res = new Line();
-            res.X1 = p1.x; res.Y1 = p1.y;
-            res.X2 = p2.x; res.Y2 = p2.y;
-            return res;
-        }
-
-        private static double getLenght(Line line, Vector c) // вычисление расстояние от точки до отрезка
-        {
-            Vector a = new Vector();
-            a.x = line.X1;
-            a.y = line.Y1;
-            Vector b = new Vector();
-            b.x = line.X2;
-            b.y = line.Y2;
+            Vector a = line.Start;
+            Vector b = line.End;
             //a - начало отрезка
             //б - конец отрезка 
             //с - точка
@@ -423,175 +368,32 @@ namespace TestPolygons
             if ((0 < p) && (p < r)) { return (c - a - p / r * (b - a)).Lenght; }
             return double.MaxValue;
         }
+        #endregion
 
-        public static Vector getCrossPoint(Line l1, Line l2, out int crossFlag, bool hard)  // тут мне помогал гугль и Крамер
+        #region Установка свойств "по-умолчанию"
+        public static Polygon setPolygonProperty(Polygon pg)  // установка раскраски полигона "по умолчанию"
         {
-            crossFlag = -2;
-            Vector result = new Vector();
-            double m = ((l2.X2 - l2.X1) * (l1.Y1 - l2.Y1) - (l2.Y2 - l2.Y1) * (l1.X1 - l2.X1));
-            double w = ((l1.X2 - l1.X1) * (l1.Y1 - l2.Y1) - (l1.Y2 - l1.Y1) * (l1.X1 - l2.X1));
-            double n = ((l2.Y2 - l2.Y1) * (l1.X2 - l1.X1) - (l2.X2 - l2.X1) * (l1.Y2 - l1.Y1));
-            double Ua = m / n;
-            double Ub = w / n;
-            if ((n == 0) && (m != 0))
-            {
-                crossFlag = -1; //Прямые параллельны и не имеют пересечения
-            }
-            else if ((m == 0) && (n == 0))
-            {
-                crossFlag = 0; //Прямые совпадают
-            }
-            else
-            {
-                //Прямые имеют точку пересечения 
-                result.x = l1.X1 + Ua * (l1.X2 - l1.X1);
-                result.y = l1.Y1 + Ua * (l1.Y2 - l1.Y1);
-                crossFlag = 1;
-                double x11 = Math.Min(l2.X1, l2.X2);
-                double x12 = Math.Max(l2.X1, l2.X2);
-                double y11 = Math.Min(l2.Y1, l2.Y2);
-                double y12 = Math.Max(l2.Y1, l2.Y2);
-
-                double x21 = Math.Min(l1.X1, l1.X2);
-                double x22 = Math.Max(l1.X1, l1.X2);
-                double y21 = Math.Min(l1.Y1, l1.Y2);
-                double y22 = Math.Max(l1.Y1, l1.Y2);
-                if (!hard)
-                {
-                    if ((result.x > x11) && (result.x < x12) && (result.y > y11) && (result.y < y12) && (result.x > x21) && (result.x < x22) && (result.y > y21) && (result.y < y22))
-                    {
-                        crossFlag = 2;  // отрезки имеют точку пересечения
-                    }
-                }
-                else
-                {
-                    if ((result.x >= x11) && (result.x <= x12) && (result.y >= y11) && (result.y <= y12) && (result.x >= x21) && (result.x <= x22) && (result.y >= y21) && (result.y <= y22))
-                    {
-                        crossFlag = 2;  // отрезки имеют точку пересечения
-                    }
-                }
-            }
-            return result;
+            pg.Fill = new SolidColorBrush(Color.FromArgb(255, 127, 127, 127));
+            pg.StrokeThickness = 1;
+            pg.Stroke = Brushes.Blue;
+            return pg;
         }
 
-        public static Dictionary<string, List<Vector>> findPointsCrossPolygons(List<Line> pg1, List<Line> pg2)
+        private static Ellipse setEllipseProperty(Ellipse el, Vector p, Brush color, int radius) // установка раскраски эллипса "по умолчанию"
         {
-            Dictionary<string, List<Vector>> res = new Dictionary<string, List<Vector>>();
-            res.Add("pg1", getCrossPoints(pg1, pg2));
-            res.Add("pg2", getCrossPoints(pg2, pg1));
-            return res;
+            el.Width = radius * 2;
+            el.Height = radius * 2;
+            el.StrokeThickness = 5;
+            el.Stroke = color;
+            el.Margin = new Thickness(p.x - radius, p.y - radius, 0, 0);
+            return el;
         }
+        #endregion
 
-        private static List<Vector> getCrossPoints(List<Line> pg1, List<Line> pg2)
-        {
 
-            List<Vector> points = new List<Vector>();
-            for (int i = 0; i < pg1.Count; i++)
-            {
-                List<Vector> range = new List<Vector>();
-                for (int j = 0; j < pg2.Count; j++)
-                {
-                    int crossFlag = -2;
-                    Vector cross = getCrossPoint(pg1[i], pg2[j], out crossFlag, true);
-                    if (crossFlag == 2)
-                    {
-                        range.Add(cross);
-                    }
-                }
-                range = sortPoints(new Vector(pg1[i].X1, pg1[i].Y1), new Vector(pg1[i].X2, pg1[i].Y2), range);
-                points.Add(new Vector(pg1[i].X1, pg1[i].Y1));
-                points.AddRange(range);
-            }
-            return points;
-        }
 
-        private static List<Vector> sortPoints(Vector start, Vector end, List<Vector> points)
-        {
-            List<Vector> res = new List<Vector>();
-            points.Sort();
-            if (start.x > end.x)
-            {
-                points.Reverse();
-            }
-            res.AddRange(points);
-            return res;
-        }
-
-        private static List<Line> testSidesLine(List<Line> lines1, List<Line> lines2)
-        {
-            for (int i = 0; i < lines1.Count; i++)
-            {
-                Vector centerPoint = getCenterPoint(lines1[i]);
-                if (testRay(centerPoint, lines2))
-                {
-                    lines1[i].Tag = true;
-                }
-                else
-                {
-                    lines1[i].Tag = false;
-                }
-            }
-            return lines1;
-        }
-
-        private static Vector getCenterPoint(Line line)
-        {
-            Vector res = new Vector();
-            res.x = (line.X1 + line.X2) / 2;
-            res.y = (line.Y1 + line.Y2) / 2;
-            return res;
-        }
-
-        private static bool testRay(Vector p, List<Line> lines)
-        {
-            double minX = double.MaxValue;
-            double minY = double.MaxValue;
-            foreach (Line l in lines)
-            {
-                minX = (Math.Min(l.X1, l.X2) < minX) ? Math.Min(l.X1, l.X2) : minX;
-                minY = (Math.Min(l.Y1, l.Y2) < minY) ? Math.Min(l.Y1, l.Y2) : minY;
-            }
-            Line ray = getLine(p, new Vector(minX-1, minY-1));
-            int count = 0;
-            for (int i = 0; i < lines.Count; i++)
-            {
-                int flag = -2;
-                Vector cross = getCrossPoint(ray, lines[i], out flag, false);
-                if (flag == 2) { count++; }
-            }
-            return (count % 2 == 1);
-        }
-
-        private static bool getCountPoint(Vector p, List<Line> lines)
-        {
-            int count = 0;
-            foreach (Line l in lines)
-            {
-                p.x = Math.Round(p.x, 0);
-                p.y = Math.Round(p.y, 0);
-                l.X1 = Math.Round(l.X1, 0);
-                l.X2 = Math.Round(l.X2, 0);
-                l.Y1 = Math.Round(l.Y1, 0);
-                l.Y2 = Math.Round(l.Y2, 0);
-                if (((p.x == l.X1) && (p.y == l.Y1)) || ((p.x == l.X2) && (p.y == l.Y2))) { count++; }
-            }
-            return (count > 0);
-        }
-
-        private static List<Line> deleteFlag(bool flag, List<Line> lines)
-        {
-            List<Line> res = new List<Line>();
-            foreach (Line line in lines)
-            {
-                if ((bool)line.Tag != flag)  // удаляем если линия помечена флагом
-                {
-                    res.Add(line);
-                }
-            }
-            return res;
-        }
-
-        private static void unionPolygon()
+        #region Подготовка коллекции линий продукта пересения двух полигонов
+        private static void unionPolygon()  // Функция реализующая алгоритм расчета продукта объединения/пересечения двух полигонов
         {
             //1) + Найти все точки пересечения между ребрами полигонов А и В;
             //2) + Добавить их в качестве новых вершин в оба полигона А и В;
@@ -604,13 +406,11 @@ namespace TestPolygons
             if (polygons.Count == 2)
             {
                 Dictionary<string, List<Vector>> pointsPoligons = findPointsCrossPolygons(getLinesPolygon(polygons[0]), getLinesPolygon(polygons[1]));
-                Polygon newPG1 = new Polygon();
-                restorePolygonPoints(pointsPoligons["pg1"], newPG1);
-                Polygon newPG2 = new Polygon();
-                restorePolygonPoints(pointsPoligons["pg2"], newPG2);
-                List<Line> lines1 = getLinesPolygon(newPG1);
-                List<Line> lines2 = getLinesPolygon(newPG2);
-                lines1 = testSidesLine(lines1, lines2);  // 
+                Polygon newPG1 = restorePolygonPoints(pointsPoligons["pg1"], new Polygon());
+                Polygon newPG2 = restorePolygonPoints(pointsPoligons["pg2"], new Polygon());
+                List<VLine> lines1 = getLinesPolygon(newPG1);
+                List<VLine> lines2 = getLinesPolygon(newPG2);
+                lines1 = testSidesLine(lines1, lines2);   
                 lines2 = testSidesLine(lines2, lines1);
                 lines1 = deleteFlag(true, lines1);  // объединение
                 lines2 = deleteFlag(true, lines2);  //  
@@ -628,23 +428,122 @@ namespace TestPolygons
                 polyPolygon.Add(getPolyPolygon(unionLines));
             }
         }
-        private static Polygon getPolyPolygon(List<Line> lines)
+
+        private static Dictionary<string, List<Vector>> findPointsCrossPolygons(List<VLine> pg1, List<VLine> pg2)  // конвертация полигонов в наборы точек
+        {
+            Dictionary<string, List<Vector>> res = new Dictionary<string, List<Vector>>();
+            res.Add("pg1", getCrossPoints(pg1, pg2));
+            res.Add("pg2", getCrossPoints(pg2, pg1));
+            return res;
+        }
+
+        private static List<Vector> getCrossPoints(List<VLine> pg1, List<VLine> pg2) // нахождение, добавление и сортировка тчек пересечения полигонов
+        {
+            List<Vector> points = new List<Vector>();
+            for (int i = 0; i < pg1.Count; i++)
+            {
+                List<Vector> range = new List<Vector>();
+                for (int j = 0; j < pg2.Count; j++)
+                {
+                    if (VGeometry.crossPoint(pg1[i], pg2[j]))
+                    {
+                        range.Add(VGeometry.crossProduct);
+                    }
+                }
+                range.Sort();
+                if (pg1[i].Start.x > pg1[i].End.x)
+                {
+                    range.Reverse();
+                }
+                points.Add(pg1[i].Start);
+                points.AddRange(range);
+            }
+            return points;
+        }
+
+        private static List<VLine> testSidesLine(List<VLine> lines1, List<VLine> lines2) // тестирование средних точек каждой линии на предмет внутри или снаружи чужого полигона
+        {
+            for (int i = 0; i < lines1.Count; i++)
+            {
+                Vector centerPoint = lines1[i].centerPoint;
+                if (testRay(centerPoint, lines2))
+                {
+                    lines1[i].Tag = true;
+                }
+                else
+                {
+                    lines1[i].Tag = false;
+                }
+            }
+            return lines1;
+        }
+
+        private static bool testRay(Vector p, List<VLine> lines) // фугкция тестирования точки (внутри/снаружи) полигона методом луча (true - внутри,false - снаружи)
+        {
+            double minX = double.MaxValue;
+            double minY = double.MaxValue;
+            foreach (VLine l in lines)
+            {
+                minX = (Math.Min(l.Start.x, l.End.x) < minX) ? Math.Min(l.Start.x, l.End.x) : minX;
+                minY = (Math.Min(l.Start.y, l.End.y) < minY) ? Math.Min(l.Start.y, l.End.y) : minY;
+            }
+            VLine ray = new VLine(p, new Vector(minX - 1, minY - 1));
+            int count = 0;
+            for (int i = 0; i < lines.Count; i++)
+            {
+                if (VGeometry.crossPoint(ray, lines[i]))
+                {
+                    count++;
+                }
+            }
+            return (count % 2 == 1);
+        }
+
+        private static List<VLine> deleteFlag(bool flag, List<VLine> lines) // функция удаления линий с пометками (внутри/снаружи)
+        {
+            List<VLine> res = new List<VLine>();
+            foreach (VLine line in lines)
+            {
+                if ((bool)line.Tag != flag)  // удаляем если линия помечена флагом
+                {
+                    res.Add(line);
+                }
+            }
+            return res;
+        }
+        #endregion
+
+
+
+
+
+
+
+
+
+
+        
+
+
+
+        
+        private static Polygon getPolyPolygon(List<VLine> lines)
         {
             Polygon res = new Polygon();
             PointCollection pColl = new PointCollection();
-            Vector pIn = new Vector(lines[0].X1, lines[0].Y1);
+            Vector pIn = lines[0].Start;
             bool flag = true;
             pColl.Add(new Point(pIn.x, pIn.y));
             Vector nextPoint = pIn;
             while (flag)
             {
-                Line line = getNearLine(pIn, lines);
+                VLine line = getNearLine(pIn, lines);
                 if (line != null)
                 {
-                    double lenA = (nextPoint - new Vector(line.X1, line.Y1)).Lenght;
-                    double lenB = (nextPoint - new Vector(line.X2, line.Y2)).Lenght;
-                    if (lenA < lenB) { nextPoint = new Vector(line.X2, line.Y2); }
-                    if (lenA >= lenB) { nextPoint = new Vector(line.X1, line.Y1); }
+                    double lenA = (nextPoint - line.Start).Lenght;
+                    double lenB = (nextPoint - line.End).Lenght;
+                    if (lenA < lenB) { nextPoint = line.End; }
+                    if (lenA >= lenB) { nextPoint = line.Start; }
                     if (nextPoint == pIn) { flag = false; }
                     else { pColl.Add(new Point(nextPoint.x, nextPoint.y));}
                 }
@@ -657,14 +556,14 @@ namespace TestPolygons
             return res;
         }
 
-        private static Line getNearLine(Vector pIn, List<Line> lines)
+        private static VLine getNearLine(Vector pIn, List<VLine> lines)
         {
-            Line res = null;
+            VLine res = null;
             double minL = double.MaxValue;
-            foreach (Line line in lines)
+            foreach (VLine line in lines)
             {
-                double lenA = (pIn - new Vector(line.X1, line.Y1)).Lenght;
-                double lenB = (pIn - new Vector(line.X2, line.Y2)).Lenght;
+                double lenA = (pIn - line.Start).Lenght;
+                double lenB = (pIn - line.End).Lenght;
                 if (Math.Min(lenA, lenB) < minL)
                 {
                     minL = Math.Min(lenA, lenB);

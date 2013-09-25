@@ -26,6 +26,8 @@ namespace TestPolygons
             lbCanvases.Items.Clear();
             lbCanvases.ItemsSource = Elements.plgns;
             lbHint.Content = "Добро пожаловать в программу рисования полигонов";
+            Test tst = new Test();
+            tst.runTest();
         }  // инициализация
 
         private void prepareDBsubMenu()
@@ -166,13 +168,9 @@ namespace TestPolygons
             }
             canvas.Children.Add(Elements.line);
             canvas.Children.Add(Elements.currentPoint);
-            foreach (Line line in Elements.unionLines)
+            foreach (VLine line in Elements.unionLines)
             {
                 canvas.Children.Add(line);
-            }
-            foreach (Polygon polygon in Elements.polyPolygon)
-            {
-                canvas.Children.Add(polygon);
             }
         }
 
