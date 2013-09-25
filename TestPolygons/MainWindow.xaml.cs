@@ -170,6 +170,10 @@ namespace TestPolygons
             {
                 canvas.Children.Add(line);
             }
+            foreach (Polygon polygon in Elements.polyPolygon)
+            {
+                canvas.Children.Add(polygon);
+            }
         }
 
         private void updateBinding()

@@ -18,9 +18,10 @@ namespace TestPolygons
 
         public static List<Polygon> polygons = new List<Polygon>();  // коллекция полигонов
 
-        public static List<Line> unionLines = new List<Line>();  // линии объединенного полигона
-
         public static ObservableCollection<Canvas> plgns = new ObservableCollection<Canvas>();  // коллекция полигонов
+
+        public static List<Polygon> polyPolygon = new List<Polygon>();
+        public static List<Line> unionLines = new List<Line>();
 
         public static Polyline line = new Polyline(); // недорисованный полигон
 
@@ -543,7 +544,14 @@ namespace TestPolygons
 
         private static bool testRay(Vector p, List<Line> lines)
         {
-            Line ray = getLine(p, new Vector(-200, -200));
+            double minX = double.MaxValue;
+            double minY = double.MaxValue;
+            foreach (Line l in lines)
+            {
+                minX = (Math.Min(l.X1, l.X2) < minX) ? Math.Min(l.X1, l.X2) : minX;
+                minY = (Math.Min(l.Y1, l.Y2) < minY) ? Math.Min(l.Y1, l.Y2) : minY;
+            }
+            Line ray = getLine(p, new Vector(minX-1, minY-1));
             int count = 0;
             for (int i = 0; i < lines.Count; i++)
             {
@@ -588,10 +596,10 @@ namespace TestPolygons
             //1) + Найти все точки пересечения между ребрами полигонов А и В;
             //2) + Добавить их в качестве новых вершин в оба полигона А и В;
             //3) + Разметить полигоны А и В: каждое ребро из А пометить флагом I(inside), если оно внутри полигона В, и O(outside), если оно снаружи. Аналогично для полигона В.
-            //4) Теперь в зависимости от вида булевой операции:
-            //а) объединение: удалить из А и В все ребра помеченные как I;
-            //б) пересечение: удалить из А и В все ребра помеченные как O;
-            //в) вычитание (А-В): удалить из А все I, а из В все O.
+            //4) + Теперь в зависимости от вида булевой операции:
+            //а) + объединение: удалить из А и В все ребра помеченные как I;
+            //б) + пересечение: удалить из А и В все ребра помеченные как O;
+            //в) + вычитание (А-В): удалить из А все I, а из В все O.
             //5) Слить то что осталось от А и В в один результирующий полигон.
             if (polygons.Count == 2)
             {
@@ -604,20 +612,66 @@ namespace TestPolygons
                 List<Line> lines2 = getLinesPolygon(newPG2);
                 lines1 = testSidesLine(lines1, lines2);  // 
                 lines2 = testSidesLine(lines2, lines1);
-                
-                //lines1 = deleteFlag(true, lines1);  // объединение
-                //lines2 = deleteFlag(true, lines2);  //  
-                lines1 = deleteFlag(false, lines1);  // пересечение
-                lines2 = deleteFlag(false, lines2);  // 
+                lines1 = deleteFlag(true, lines1);  // объединение
+                lines2 = deleteFlag(true, lines2);  //  
+                //lines1 = deleteFlag(false, lines1);  // пересечение
+                //lines2 = deleteFlag(false, lines2);  //
                 unionLines.Clear();
                 unionLines.AddRange(lines1);
                 unionLines.AddRange(lines2);
                 for (int i = 0; i < unionLines.Count; i++)
                 {
-                    unionLines[i].StrokeThickness = 5;
-                    unionLines[i].Stroke = new SolidColorBrush(Color.FromArgb(127, 0, 255, 0));
+                    unionLines[i].Stroke = Brushes.Tan;
+                    unionLines[i].StrokeThickness = 2;
+                }
+                polyPolygon.Clear();
+                polyPolygon.Add(getPolyPolygon(unionLines));
+            }
+        }
+        private static Polygon getPolyPolygon(List<Line> lines)
+        {
+            Polygon res = new Polygon();
+            PointCollection pColl = new PointCollection();
+            Vector pIn = new Vector(lines[0].X1, lines[0].Y1);
+            bool flag = true;
+            pColl.Add(new Point(pIn.x, pIn.y));
+            Vector nextPoint = pIn;
+            while (flag)
+            {
+                Line line = getNearLine(pIn, lines);
+                if (line != null)
+                {
+                    double lenA = (nextPoint - new Vector(line.X1, line.Y1)).Lenght;
+                    double lenB = (nextPoint - new Vector(line.X2, line.Y2)).Lenght;
+                    if (lenA < lenB) { nextPoint = new Vector(line.X2, line.Y2); }
+                    if (lenA >= lenB) { nextPoint = new Vector(line.X1, line.Y1); }
+                    if (nextPoint == pIn) { flag = false; }
+                    else { pColl.Add(new Point(nextPoint.x, nextPoint.y));}
+                }
+            } 
+            
+            res.Points = pColl;
+            res.Fill = new SolidColorBrush(Color.FromArgb(127, 0, 255, 0));
+            res.StrokeThickness = 1;
+            res.Stroke = Brushes.Black;
+            return res;
+        }
+
+        private static Line getNearLine(Vector pIn, List<Line> lines)
+        {
+            Line res = null;
+            double minL = double.MaxValue;
+            foreach (Line line in lines)
+            {
+                double lenA = (pIn - new Vector(line.X1, line.Y1)).Lenght;
+                double lenB = (pIn - new Vector(line.X2, line.Y2)).Lenght;
+                if (Math.Min(lenA, lenB) < minL)
+                {
+                    minL = Math.Min(lenA, lenB);
+                    res = line;
                 }
             }
+            return res;
         }
     }
 }
