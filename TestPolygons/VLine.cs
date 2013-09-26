@@ -10,73 +10,48 @@ namespace TestPolygons
 {
     class VLine : Shape
     {
-        public VLine()
+        LineGeometry lineGeometry = new LineGeometry();
+
+        public static readonly DependencyProperty StartProperty;
+        public static readonly DependencyProperty EndProperty;
+        static VLine()
         {
-            Start = new Vector();
-            End = new Vector();
+            StartProperty = DependencyProperty.Register(
+            "Start",
+            typeof(Vector),
+            typeof(VLine),
+            new FrameworkPropertyMetadata(new Vector()));
+            EndProperty = DependencyProperty.Register(
+            "End",
+            typeof(Vector),
+            typeof(VLine),
+            new FrameworkPropertyMetadata(new Vector()));
         }
+        
         public VLine(Vector st, Vector en)
         {
             Start = st;
             End = en;
         }
 
-        LineGeometry lineGeometry = new LineGeometry();
-
-        public static readonly DependencyProperty StartPointProperty =
-            LineGeometry.StartPointProperty.AddOwner(
-                typeof(VLine),
-                new FrameworkPropertyMetadata(new Point(0, 0),
-                    FrameworkPropertyMetadataOptions.AffectsMeasure));
-
-        public static readonly DependencyProperty EndPointProperty =
-            LineGeometry.EndPointProperty.AddOwner(
-                typeof(VLine),
-                new FrameworkPropertyMetadata(new Point(0, 0),
-                    FrameworkPropertyMetadataOptions.AffectsMeasure));
-
-        private Point StartPoint
-        {
-            set { SetValue(StartPointProperty, value); }
-            get { return (Point)GetValue(StartPointProperty); }
-        }
-
-        private Point EndPoint
-        {
-            set { SetValue(EndPointProperty, value); }
-            get { return (Point)GetValue(EndPointProperty); }
-        }
-
         public Vector Start
         {
-            set
-            {
-                StartPoint = value.getPoint;
-            }
-            get
-            {
-                return new Vector(StartPoint);
-            }
+            get { return (Vector)base.GetValue(StartProperty); }
+            set { base.SetValue(StartProperty, value); }
         }
 
         public Vector End
         {
-            set
-            {
-                EndPoint = value.getPoint;
-            }
-            get
-            {
-                return new Vector(EndPoint);
-            }
+            get { return (Vector)base.GetValue(EndProperty); }
+            set { base.SetValue(EndProperty, value); }
         }
 
         protected override Geometry DefiningGeometry
         {
             get
             {
-                lineGeometry.StartPoint = StartPoint;
-                lineGeometry.EndPoint = EndPoint;
+                lineGeometry.StartPoint = Start.getPoint;
+                lineGeometry.EndPoint = End.getPoint;
                 return lineGeometry;
             }
         }
