@@ -9,7 +9,7 @@ namespace TestPolygons
     {
         public static Vector crossProduct = new Vector();
 
-        public static bool crossPoint(VLine AB, VLine CD)
+        public static bool crossPoint(VLine AB, VLine CD) // поиск точки пересечения между двумя отрезками
         {
             //http://fadedead.org/museum/vector-intersection-formula
             Vector result = new Vector();
@@ -33,6 +33,21 @@ namespace TestPolygons
                 }
             }
             return false;
+        }
+
+        public static double getDistance(VLine line, Vector c) // вычисление расстояние от точки до отрезка
+        {
+            Vector a = line.Start;
+            Vector b = line.End;
+            //a - начало отрезка
+            //б - конец отрезка 
+            //с - точка
+            double p = (c - a) * (b - a);
+            double r = (b - a) * (b - a);
+            if (0 >= p) { return (c - a).Lenght; }
+            if (p >= r) { return (c - b).Lenght; }
+            if ((0 < p) && (p < r)) { return (c - a - p / r * (b - a)).Lenght; }
+            return double.MaxValue;
         }
     }
 }

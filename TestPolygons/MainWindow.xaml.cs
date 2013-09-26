@@ -26,8 +26,6 @@ namespace TestPolygons
             lbCanvases.Items.Clear();
             lbCanvases.ItemsSource = Elements.plgns;
             lbHint.Content = "Добро пожаловать в программу рисования полигонов";
-            Test tst = new Test();
-            tst.runTest();
         }  // инициализация
 
         private void prepareDBsubMenu()

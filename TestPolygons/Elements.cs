@@ -105,7 +105,7 @@ namespace TestPolygons
                 List<VLine> lines = getLinesPolygon(polygons[i]);
                 for (int j = 0; j < lines.Count; j++)
                 {
-                    double len = getLenght(lines[j], p);
+                    double len = VGeometry.getDistance(lines[j], p);
                     if (len < minLenght)
                     {
                         minLenght = len;
@@ -354,20 +354,6 @@ namespace TestPolygons
             return res;
         }
 
-        private static double getLenght(VLine line, Vector c) // вычисление расстояние от точки до отрезка
-        {
-            Vector a = line.Start;
-            Vector b = line.End;
-            //a - начало отрезка
-            //б - конец отрезка 
-            //с - точка
-            double p = (c - a) * (b - a);
-            double r = (b - a) * (b - a);
-            if (0 >= p) { return (c - a).Lenght; }
-            if (p >= r) { return (c - b).Lenght; }
-            if ((0 < p) && (p < r)) { return (c - a - p / r * (b - a)).Lenght; }
-            return double.MaxValue;
-        }
         #endregion
 
         #region Установка свойств "по-умолчанию"
