@@ -166,9 +166,12 @@ namespace TestPolygons
             }
             canvas.Children.Add(Elements.line);
             canvas.Children.Add(Elements.currentPoint);
-            foreach (VLine line in Elements.unionLines)
+            foreach (List<Polygon> polygons in Elements.polyPolygons.Values)
             {
-                canvas.Children.Add(line);
+                foreach (Polygon polygon in polygons)
+                {
+                    canvas.Children.Add(polygon);
+                }
             }
         }
 
@@ -276,10 +279,7 @@ namespace TestPolygons
                 }
                 else
                 {
-                    if (Elements.polygons.Count < 2)
-                    {
                         btnToolPoly_Click(null, null);
-                    }
                 }
 
                 if (Tools.type == Tools.ToolType.polygon) // двигаем последний сегмент недостроенного полигона
@@ -325,6 +325,8 @@ namespace TestPolygons
             Elements.line.Points.Clear();
             Elements.polygons = new List<Polygon>();
             Elements.plgns = new ObservableCollection<Canvas>();
+            Elements.polyPolygons = new Dictionary<int, List<Polygon>>();
+            Elements.unionPolygons = new ObservableCollection<Canvas>();
             updateBinding();
         }
 

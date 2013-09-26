@@ -143,7 +143,14 @@ namespace TestPolygons
             return ((a.x != b.x) || (a.y != b.y));
         }
         #endregion
-
+        public static implicit operator Vector(Point p)
+        {
+            return new Vector(p);
+        }
+        public static implicit operator Point(Vector v)
+        {
+            return v.getPoint;
+        }
         #endregion
         #region Методы
         private double LenghtPow2
@@ -179,7 +186,7 @@ namespace TestPolygons
         {
             return new Vector(Math.Round(this.x, i), Math.Round(this.y, i));
         }
-        public Point getPoint
+        private Point getPoint
         {
             get
             {
