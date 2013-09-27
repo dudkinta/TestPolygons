@@ -6,11 +6,11 @@ using System.Text;
 
 namespace TestPolygons
 {
-    static class DBconfig
+    static class DBconfig  // Класс конфигурации подключения к БД
     {
         public static string dbConnect;
 
-        static DBconfig()
+        static DBconfig()  // Конструктор
         {
             SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder();
             builder["Server"] = "localhost";

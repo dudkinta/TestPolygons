@@ -22,9 +22,6 @@
                         <Separator/>
                         <MenuItem x:Name="mnuExit" Header="_Выход" Click="mnuExit_Click"/>
                     </MenuItem>
-                    <MenuItem Header="_Помощь">
-                        <MenuItem x:Name="mnuAbout" Header="_О программе..."/>
-                    </MenuItem>
                 </Menu>
             </DockPanel>
             <Grid Grid.Row="1">
@@ -33,7 +30,7 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <Grid Grid.Column="0" Background="#FFB4B4B4" >
+                <Grid Grid.Column="0" Background="#FFB4B4B4" MouseMove="ToolPanel_MouseMove">
                     <Border BorderBrush="Gray" BorderThickness="1">
                         <DockPanel LastChildFill="False">
                             <ToggleButton x:Name="btnToolArrow" DockPanel.Dock="Top" Click="btnToolArrow_Click">
@@ -51,7 +48,7 @@
                         </Border>
                 </Grid>
                 <Grid Grid.Column="2">
-                    <Grid>
+                    <Grid MouseMove="PreviewMousemove">
                         <Grid.RowDefinitions>
                             <RowDefinition Height ="*"/>
                             <RowDefinition Height ="*"/>

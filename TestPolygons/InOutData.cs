@@ -14,11 +14,11 @@ using System.Windows.Controls;
 
 namespace TestPolygons
 {
-    class InOutData
+    static class InOutData
     {
-        private static DataTable dtCollectDB = new DataTable();
+        private static DataTable dtCollectDB = new DataTable(); // для хранения таблицы полученной из БД
 
-        public static bool saveToFile()
+        public static bool saveToFile()//  запись в файл
         {
             SaveFileDialog FDialog = new SaveFileDialog();
             FDialog.Filter = "txt files (*.txt)|*.txt|All files (*.*)|*.*";
@@ -38,8 +38,8 @@ namespace TestPolygons
             }
             return true;
         }
-        
-        public static bool loadFromFile()
+
+        public static bool loadFromFile()// загрузка из файла
         {
             OpenFileDialog FDialog = new OpenFileDialog();
             FDialog.Filter = "txt files (*.txt)|*.txt|All files (*.*)|*.*";
@@ -61,7 +61,7 @@ namespace TestPolygons
             return true;
         }
 
-        public static bool saveToDB(int id, string name)
+        public static bool saveToDB(int id, string name)// запись в БД
         {
             string pointsData = prepareData();
             try
@@ -112,7 +112,7 @@ namespace TestPolygons
             return true;
         }
 
-        public static bool deleteFromDB(int id)
+        public static bool deleteFromDB(int id)// удаление из БД
         {
             try
             {
@@ -130,9 +130,9 @@ namespace TestPolygons
                 return false;
             }
             return true;
-        }
+        } 
 
-        public static bool loadFromDB(int id)
+        public static bool loadFromDB(int id)// загрузка из БД
         {
             try
             {
@@ -161,9 +161,9 @@ namespace TestPolygons
                 return false;
             }
             return true;
-        }
+        } 
 
-        private static string prepareData()
+        private static string prepareData()// подготовка полигонов к записи
         {
             List<List<Vector>> points = new List<List<Vector>>();
             for (int i = 0; i < Elements.polygons.Count; i++)
@@ -175,9 +175,9 @@ namespace TestPolygons
             DataContractJsonSerializer ser = new DataContractJsonSerializer(typeof(List<List<Vector>>));
             ser.WriteObject(stream, points);
             return System.Text.Encoding.Default.GetString(stream.ToArray());
-        }  
+        }   
 
-        private static void restoreData(string pointsStr)
+        private static void restoreData(string pointsStr)  // восстановление полигона после загрузки
         {
             Stream stream = new MemoryStream(ASCIIEncoding.Default.GetBytes(pointsStr));
             DataContractJsonSerializer ser = new DataContractJsonSerializer(typeof(List<List<Vector>>));
@@ -193,7 +193,7 @@ namespace TestPolygons
             }
         }
 
-        public static Dictionary<int, string> getCollectNamesFromDB()
+        public static Dictionary<int, string> getCollectNamesFromDB()  //функция сбора словаря из всех записей наборов в БД
         {
             Dictionary<int, string> res = new Dictionary<int, string>();
             SqlCommand sqlCommand = new SqlCommand("SELECT * FROM [dbo].[collects];");
@@ -219,7 +219,7 @@ namespace TestPolygons
             return res;
         }
 
-        public static void printPolygon(Canvas cnv, string description)
+        public static void printPolygon(Canvas cnv, string description) // печать полигона на принтере
         {
             PrintDialog PDialog = new PrintDialog();
             Nullable<bool> result = PDialog.ShowDialog();

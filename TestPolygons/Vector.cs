@@ -34,7 +34,7 @@ namespace TestPolygons
             this.y = p.y;
         }
 
-        public int CompareTo(Vector b)
+        public int CompareTo(Vector b)  // необходимо для сортировки в коллекциях
         {
             if (this.x < b.x)
                 return -1;
@@ -143,6 +143,7 @@ namespace TestPolygons
             return ((a.x != b.x) || (a.y != b.y));
         }
         #endregion
+        #region Неявные приведения к типам
         public static implicit operator Vector(Point p)
         {
             return new Vector(p);
@@ -151,6 +152,7 @@ namespace TestPolygons
         {
             return v.getPoint;
         }
+        #endregion
         #endregion
         #region Методы
         private double LenghtPow2

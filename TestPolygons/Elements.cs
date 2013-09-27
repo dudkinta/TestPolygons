@@ -13,7 +13,7 @@ namespace TestPolygons
     static class Elements
     {
         #region Объявление переменных
-        public struct ScaleStruct
+        public struct ScaleStruct  // структура для определения коэффициента маштабирования и смещения на миниатюре
         {
             public double minX;
             public double minY;
@@ -22,7 +22,6 @@ namespace TestPolygons
             public double scale;
         }
 
-        public static string debug = "";  // для вывода информации в lbHint на StatusBar главного окна
         public static Ellipse currentPoint = new Ellipse();  // маркер выбраной точки
         public static List<Polygon> polygons = new List<Polygon>();  // коллекция полигонов
         public static ObservableCollection<Canvas> plgns = new ObservableCollection<Canvas>();  // коллекция полигонов для маленьких картинок
@@ -261,8 +260,6 @@ namespace TestPolygons
             prepareUnionPolygon();
 
         }
-
-        
         #endregion
 
         #region Конвертация объектов в линии и точки
@@ -285,8 +282,6 @@ namespace TestPolygons
             }
             return pg;
         }
-
-        
         #endregion
 
         #region Поисковые и проверочные функции
@@ -364,7 +359,7 @@ namespace TestPolygons
             return r;
         }
 
-        private static int findPairPolygon(int polygonId)
+        private static int findPairPolygon(int polygonId)  // поиск пересекаемого полигона 
         {
             List<VLine> linesPG1 = VGeometry.getLinesPolygon(polygons[polygonId]);
             for (int i = 0; i < polygons.Count; i++)
@@ -384,7 +379,6 @@ namespace TestPolygons
             }
             return -1;
         }
-
         #endregion
 
         #region Установка свойств "по-умолчанию"

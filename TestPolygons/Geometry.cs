@@ -8,7 +8,7 @@ namespace TestPolygons
 {
     static class VGeometry
     {
-        public static Vector crossProduct = new Vector(); // точка пересечения (заполняется в crossPoint)
+        public static Vector crossProduct = new Vector(); // точка пересечения (заполняется в crossPoint) // для работы в разных потоках необходимо перенести в функцию crossPoint как out  
 
         public static bool crossPoint(VLine AB, VLine CD) // поиск точки пересечения между двумя отрезками
         {
@@ -181,7 +181,7 @@ namespace TestPolygons
             return res;
         }
 
-        public static List<Vector> scalePoints(List<Vector> points, Elements.ScaleStruct scaler)
+        public static List<Vector> scalePoints(List<Vector> points, Elements.ScaleStruct scaler)  // маштабирование точек полигона
         {
             for (int i = 0; i < points.Count; i++)
             {

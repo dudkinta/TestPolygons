@@ -306,15 +306,20 @@ namespace TestPolygons
                 if (polygonId != -1)   // переключатся на стрелку только если точка полигона под мышкой
                 {
                     btnToolArrow_Click(null, null);
+                    lbHint.Content = "Передвижение точки полигона левой кнопкой мыши. Удаление точки клавишей Delete или Backspace";
                 }
                 else
                 {
-                        btnToolPoly_Click(null, null);
+                    btnToolPoly_Click(null, null);
+                    lbHint.Content = "Что бы поставит точку нажмите левую кнопку мыши. Что бы добавить точку к полигону наждмите правую кнопку мыши";
                 }
-
                 if (Tools.type == Tools.ToolType.polygon) // двигаем последний сегмент недостроенного полигона
                 {
                     Elements.moveLastSegment(p);
+                    if (Elements.line.Points.Count > 0)
+                    {
+                        lbHint.Content = "Что бы удалить последнюю точку нажмите Delete или Backspace. Что бы удалить всю линию нажмите Esc";
+                    }
                 }
             }
             if (e.LeftButton == MouseButtonState.Pressed)
@@ -325,7 +330,6 @@ namespace TestPolygons
                     {
                         Elements.movePolygonPoint(p, polygonId, pId);
                         refreshCanvas();
-                        lbHint.Content = Elements.debug;
                     }
                 }
             }
@@ -364,6 +368,16 @@ namespace TestPolygons
         private void mnuPrint_Click(object sender, RoutedEventArgs e)//Команда меню на печать набора
         {
             InOutData.printPolygon(canvas, "Набор полигонов");
+        }
+
+        private void ToolPanel_MouseMove(object sender, MouseEventArgs e)  // Показывает подсказку над панелью инструментов
+        {
+            lbHint.Content = "Инструменты переключаются автоматичеки в зависимости от того что находится под указателем мыши.";
+        }
+
+        private void PreviewMousemove(object sender, MouseEventArgs e) // Показывает подсказку над миниатюрами полигонов
+        {
+            lbHint.Content = "Что бы распечатать полигон нажмите правую кнопку мыши и выберите \"Печать...\"";
         }  
     }
 }
