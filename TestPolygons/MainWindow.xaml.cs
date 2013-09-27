@@ -17,7 +17,7 @@ namespace TestPolygons
         private int polygonId = -1;  // для хранения номера полингона под курсором
         private int pId = -1; // для хранения номера точки под курсором
 
-        public fmMain()
+        public fmMain()// инициализация
         {
             InitializeComponent();
             prepareCanvas();
@@ -25,9 +25,18 @@ namespace TestPolygons
             prepareDBsubMenu();
             updateBinding();
             lbHint.Content = "Добро пожаловать в программу рисования полигонов";
-        }  // инициализация
+        }  
+        
+        void mnuPreviewPrint_Click(object sender, RoutedEventArgs e)  // Команда контекстного меню для печати маленьких картинок полигонов
+        {
+            MenuItem mnuItem = (MenuItem)e.OriginalSource;
+            ContextMenu cMenu = (ContextMenu)mnuItem.Parent;
+            ContentControl cControl = (ContentControl)cMenu.PlacementTarget;
+            Canvas cnv = (Canvas)cControl.Content;
+            InOutData.printPolygon(cnv, "Полигон");
+        }
 
-        private void prepareDBsubMenu()
+        private void prepareDBsubMenu()// подготовка меню Базы Данных. Если БД будет недоступно отключает это меню
         {
             mnuBD.Items.Clear();
             Dictionary<int, string> bdCollect = InOutData.getCollectNamesFromDB();
@@ -46,7 +55,7 @@ namespace TestPolygons
             else { mnuBD.IsEnabled = false; }
         }
 
-        private void addMenuCollectItem(int id, string name)
+        private void addMenuCollectItem(int id, string name)// добавление в меню БД элементов на загрузку, сохранение и удаление
         {
             MenuItem mnuItem = new MenuItem();
             mnuItem.Header = name;
@@ -69,7 +78,7 @@ namespace TestPolygons
             mnuBD.Items.Add(mnuItem);
         }
 
-        void mnuItemDelete_Click(object sender, RoutedEventArgs e)
+        void mnuItemDelete_Click(object sender, RoutedEventArgs e)// Команда меню на удаление набора из БД
         {
             MenuItem mnuCollect = sender as MenuItem;
             if (mnuCollect != null)
@@ -87,7 +96,7 @@ namespace TestPolygons
             }
         }
 
-        private void mnuItemLoad_Click(object sender, RoutedEventArgs e)
+        private void mnuItemLoad_Click(object sender, RoutedEventArgs e)// Команда меню на загрузку набора из БД
         {
             MenuItem mnuCollect = sender as MenuItem;
             if (mnuCollect != null)
@@ -105,7 +114,7 @@ namespace TestPolygons
             }
         }
 
-        private void saveToDB(int id, string collectName)
+        private void saveToDB(int id, string collectName)// Сохранение набора в БД
         {
             if (InOutData.saveToDB(id, collectName))
             {
@@ -117,8 +126,8 @@ namespace TestPolygons
                 MessageBox.Show("Ошибка сохранение набора полигонов в базу данных");
             }
         }
-        
-        private void mnuItemSave_Click(object sender, RoutedEventArgs e)
+
+        private void mnuItemSave_Click(object sender, RoutedEventArgs e)//Команда меню на сохранение набора в БД
         {
             MenuItem mnuCollect = sender as MenuItem;
             if (mnuCollect != null)
@@ -127,8 +136,8 @@ namespace TestPolygons
                 saveToDB(collect.Key, collect.Value);
             }
         }
-        
-        private void mnuNewCollect_Click(object sender, RoutedEventArgs e)
+
+        private void mnuNewCollect_Click(object sender, RoutedEventArgs e)//Команда меню на создание и сохранение нового набора в БД
         {
             NewCollectDB fmNewCollectDBname = new NewCollectDB();
             fmNewCollectDBname.ShowDialog();
@@ -136,7 +145,7 @@ namespace TestPolygons
             {
                 saveToDB(-1, fmNewCollectDBname.collectName);
             }
-        }
+        }  
 
         private void prepareToolPanel() // подготовка панели инструментов
         {
@@ -322,17 +331,17 @@ namespace TestPolygons
             }
         }
 
-        private void mnuSaveFile_Click(object sender, RoutedEventArgs e)
+        private void mnuSaveFile_Click(object sender, RoutedEventArgs e)//Команда меню на сохранение набора в файл
         {
             InOutData.saveToFile();
         }
 
-        private void mnuLoadFile_Click(object sender, RoutedEventArgs e)
+        private void mnuLoadFile_Click(object sender, RoutedEventArgs e)//Команда меню на загрузку набора из файла
         {
             InOutData.loadFromFile();
             Elements.prepareUnionPolygon();
             refreshCanvas();
-        }
+        }  
 
         private void mnuExit_Click(object sender, RoutedEventArgs e)  // команда меню "выход"
         {
@@ -352,9 +361,9 @@ namespace TestPolygons
             updateBinding();
         }
 
-        private void mnuPrint_Click(object sender, RoutedEventArgs e)
+        private void mnuPrint_Click(object sender, RoutedEventArgs e)//Команда меню на печать набора
         {
             InOutData.printPolygon(canvas, "Набор полигонов");
-        }
+        }  
     }
 }

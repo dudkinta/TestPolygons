@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace TestPolygons
 {
-    static class Tools
+    static class Tools  // класс инструментов  ("стрелочка" и "полигон")
     {
         public enum ToolType : int
         {

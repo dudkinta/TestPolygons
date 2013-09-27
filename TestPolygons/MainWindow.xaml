@@ -61,7 +61,13 @@
                                 <DataTemplate x:Key="lbCanvasTemplate">
                                     <Grid>
                                         <StackPanel>
-                                            <ContentControl Width="135" Height="135" Content="{Binding}"/>
+                                            <ContentControl Width="135" Height="135" Content="{Binding}">
+                                                <ContentControl.ContextMenu>
+                                                    <ContextMenu>
+                                                        <MenuItem Header="Печать..." Click="mnuPreviewPrint_Click"/>
+                                                    </ContextMenu>
+                                                </ContentControl.ContextMenu>
+                                            </ContentControl>
                                         </StackPanel>
                                     </Grid>
                                 </DataTemplate>
@@ -72,7 +78,13 @@
                                 <DataTemplate x:Key="lbCanvasTemplate">
                                     <Grid>
                                         <StackPanel>
-                                            <ContentControl Width="135" Height="135" Content="{Binding}"/>
+                                            <ContentControl Width="135" Height="135" Content="{Binding}">
+                                                <ContentControl.ContextMenu>
+                                                    <ContextMenu>
+                                                        <MenuItem Header="Печать..." Click="mnuPreviewPrint_Click"/>
+                                                    </ContextMenu>
+                                                </ContentControl.ContextMenu>
+                                            </ContentControl>
                                         </StackPanel>
                                     </Grid>
                                 </DataTemplate>

@@ -96,7 +96,6 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <Compile Include="Test.cs" />
     <Compile Include="Tools.cs" />
     <Compile Include="Vector.cs" />
     <Compile Include="VLine.cs" />
