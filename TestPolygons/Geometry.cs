@@ -60,7 +60,7 @@ namespace TestPolygons
             return res;
         }
 
-        private static List<Vector> getCrossPoints(List<VLine> pg1, List<VLine> pg2) // нахождение, добавление и сортировка точек пересечения полигонов
+        public static List<Vector> getCrossPoints(List<VLine> pg1, List<VLine> pg2) // нахождение, добавление и сортировка точек пересечения полигонов
         {
             List<Vector> points = new List<Vector>();
             for (int i = 0; i < pg1.Count; i++)
@@ -101,7 +101,7 @@ namespace TestPolygons
             return lines1;
         }
 
-        private static bool testRay(Vector p, List<VLine> lines) // функция тестирования точки (внутри/снаружи) полигона методом луча (true - внутри,false - снаружи)
+        public static bool testRay(Vector p, List<VLine> lines) // функция тестирования точки (внутри/снаружи) полигона методом луча (true - внутри,false - снаружи)
         {
             double minX = double.MaxValue;
             double minY = double.MaxValue;
@@ -157,23 +157,40 @@ namespace TestPolygons
             return lines;
         }
 
-        public static int findPairPolygon(int polygonId, List<Polygon> polygons)
+        public static Elements.ScaleStruct normalizePoints(List<Vector> points, int normX, int normY) // нормализация точек полигона для вписывания в миниатюру
         {
-            for (int i=0;i<polygons.Count;i++)
+            Elements.ScaleStruct res = new Elements.ScaleStruct();
+            double minX = double.MaxValue;
+            double maxX = double.MinValue;
+            double minY = double.MaxValue;
+            double maxY = double.MinValue;
+            for (int i = 0; i < points.Count; i++)
             {
-                if (i != polygonId)
-                {
-                    if ((int)polygons[i].Tag == -1)
-                    {
-                        List<Vector> pList = getCrossPoints(getLinesPolygon(polygons[polygonId]), getLinesPolygon(polygons[i]));
-                        if (pList.Count != 0)
-                        {
-                            return i;
-                        }
-                    }
-                }
+                minX = (points[i].x < minX) ? points[i].x : minX;
+                minY = (points[i].y < minY) ? points[i].y : minY;
+                maxX = (points[i].x > maxX) ? points[i].x : maxX;
+                maxY = (points[i].y > maxY) ? points[i].y : maxY;
             }
-            return -1;
+            double scale = ((maxX - minX) > (maxY - minY)) ? normX / ((maxX - minX)) : normY / (maxY - minY);
+            double sx = ((maxX - minX) > (maxY - minY)) ? 0 : (normX - (maxX - minX) * scale) / 2;
+            double sy = ((maxX - minX) > (maxY - minY)) ? (normY - (maxY - minY) * scale) / 2 : 0;
+            
+            res.minX = minX; res.minY = minY;
+            res.sx = sx; res.sy = sy;
+            res.scale = scale;
+            return res;
+        }
+
+        public static List<Vector> scalePoints(List<Vector> points, Elements.ScaleStruct scaler)
+        {
+            for (int i = 0; i < points.Count; i++)
+            {
+                points[i].x = points[i].x - scaler.minX;
+                points[i].x = (points[i].x * scaler.scale) + scaler.sx;
+                points[i].y = points[i].y - scaler.minY;
+                points[i].y = (points[i].y * scaler.scale) + scaler.sy;
+            }
+            return points;
         }
     }
 }

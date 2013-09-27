@@ -46,13 +46,17 @@
                     </Border>
                 </Grid>
                 <Grid Grid.Column="1">
-                    <Border BorderBrush="Gray" BorderThickness="1">
-                        <Canvas x:Name="canvas" MouseDown="canvas_MouseDown" PreviewMouseMove="canvas_PreviewMouseMove"/>
-                    </Border>
+                        <Border BorderBrush="Gray" BorderThickness="1">
+                            <Canvas x:Name="canvas" MouseDown="canvas_MouseDown" PreviewMouseMove="canvas_PreviewMouseMove"/>
+                        </Border>
                 </Grid>
                 <Grid Grid.Column="2">
-                    <DockPanel>
-                        <ListView x:Name="lbCanvases" ItemTemplate="{DynamicResource lbCanvasTemplate}" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto" HorizontalAlignment="Left" DockPanel.Dock="Top">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height ="*"/>
+                            <RowDefinition Height ="*"/>
+                        </Grid.RowDefinitions>
+                        <ListView Grid.Row="0" x:Name="lbCanvases" Width="155" ItemTemplate="{DynamicResource lbCanvasTemplate}" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Visible" HorizontalAlignment="Left" DockPanel.Dock="Top">
                             <ListView.Resources>
                                 <DataTemplate x:Key="lbCanvasTemplate">
                                     <Grid>
@@ -63,7 +67,18 @@
                                 </DataTemplate>
                             </ListView.Resources>
                         </ListView>
-                    </DockPanel>
+                        <ListView Grid.Row="1" x:Name="lbCanvasesUnion" Width="155" ItemTemplate="{DynamicResource lbCanvasTemplate}" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Visible" HorizontalAlignment="Left" DockPanel.Dock="Top">
+                            <ListView.Resources>
+                                <DataTemplate x:Key="lbCanvasTemplate">
+                                    <Grid>
+                                        <StackPanel>
+                                            <ContentControl Width="135" Height="135" Content="{Binding}"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListView.Resources>
+                        </ListView>
+                    </Grid>
                 </Grid>
             </Grid>
             <Grid Grid.Row="2">

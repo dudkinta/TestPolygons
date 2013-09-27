@@ -187,10 +187,6 @@ namespace TestPolygons
             foreach (List<Vector> pgPoints in points)
             {
                 Polygon polygon = new Polygon();
-                SolidColorBrush sbrush = new SolidColorBrush(Color.FromArgb(200, 127, 127, 127));
-                polygon.Fill = sbrush;
-                polygon.StrokeThickness = 2;
-                polygon.Stroke = Brushes.Blue;
                 Elements.restorePolygonPoints(pgPoints, polygon);
                 Elements.polygons.Add(polygon);
                 Elements.addToCollect(polygon);

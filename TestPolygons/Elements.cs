@@ -13,12 +13,21 @@ namespace TestPolygons
     static class Elements
     {
         #region Объявление переменных
+        public struct ScaleStruct
+        {
+            public double minX;
+            public double minY;
+            public double sx;
+            public double sy;
+            public double scale;
+        }
+
         public static string debug = "";  // для вывода информации в lbHint на StatusBar главного окна
         public static Ellipse currentPoint = new Ellipse();  // маркер выбраной точки
         public static List<Polygon> polygons = new List<Polygon>();  // коллекция полигонов
         public static ObservableCollection<Canvas> plgns = new ObservableCollection<Canvas>();  // коллекция полигонов для маленьких картинок
         public static ObservableCollection<Canvas> unionPolygons = new ObservableCollection<Canvas>();  // коллекция объединенных полигонов для маленьких картинок
-        public static Dictionary<int, List<Polygon>> polyPolygons = new Dictionary<int, List<Polygon>>(); // коллекция объединенных полигонов
+        public static List<List<Polygon>> polyPolygons = new List<List<Polygon>>(); // коллекция объединенных полигонов
         public static Polyline line = new Polyline(); // недорисованный полигон
         #endregion
 
@@ -60,17 +69,12 @@ namespace TestPolygons
                     line.Points.RemoveAt(pCount - 1);
                     Polygon polygon = new Polygon();
                     polygon.Points = line.Points;
-                    SolidColorBrush sbrush = new SolidColorBrush(Color.FromArgb(50, 127, 127, 127));
-                    polygon.Fill = sbrush;
-                    polygon.StrokeThickness = 0;
-                    polygon.Stroke = Brushes.Transparent;
                     polygons.Add(polygon);
                     line = new Polyline();
                     res = true;
                     addToCollect(polygon);
                     int polyCount = polygons.Count;
-                    polygon.Tag = -1;
-                    prepareUnionPolygon(polyCount - 1);
+                    prepareUnionPolygon();
                 }
             }
             return res;
@@ -78,21 +82,57 @@ namespace TestPolygons
 
         public static void addToCollect(Polygon pg) // функция создания и добавления в коллекцию миниатюр
         {
-            List<Vector> points = normalizePoints(savePolygonPoints(pg), 130, 130); //нормализуем точки полигона для того что бы он влез в миниатюру без искажений
+            List<Vector> points = savePolygonPoints(pg);
+            ScaleStruct scaler = VGeometry.normalizePoints(points, 130, 130); //нормализуем точки полигона для того что бы он влез в миниатюру без искажений
+            points = VGeometry.scalePoints(points, scaler);
             Polygon newPG = new Polygon();
             restorePolygonPoints(points, newPG); // восстанавливаем нормализованные точки в новый полигон
-            newPG = setPolygonProperty(newPG);
+            newPG.Fill = Brushes.Gray;
+            newPG.Stroke = Brushes.Black;
+            newPG.StrokeThickness = 1;
             Canvas cnv = new Canvas();
             cnv.Children.Add(newPG);
             plgns.Add(cnv); // и добавляем в коллекцию
         }
+        public static void addToUnionCollect(List<List<Polygon>> uPgs) // функция создания и добавления в коллекцию миниатюр
+        {
+            foreach (List<Polygon> pgs in uPgs)
+            {
+                Canvas cnv = new Canvas();
+                ScaleStruct scaler = VGeometry.normalizePoints(savePolygonPoints(pgs[0]), 130, 130); //нормализуем точки полигона для того что бы он влез в миниатюру без искажений
+                for (int i = 0; i < pgs.Count; i++)
+                {
+                    List<Vector> points = savePolygonPoints(pgs[i]);
+                    points = VGeometry.scalePoints(points, scaler);
+                    Polygon newPG = new Polygon();
+                    restorePolygonPoints(points, newPG); // восстанавливаем нормализованные точки в новый полигон
+                    if (i == 0)
+                    {
+                        newPG.Fill = Brushes.Green;
+                    }
+                    else
+                    {
+                        newPG.Fill = Brushes.White;
+                    }
+                    newPG.Stroke = Brushes.Black;
+                    newPG.StrokeThickness = 1;
+                    cnv.Children.Add(newPG);
+                    
+                }
+                unionPolygons.Add(cnv); // и добавляем в коллекцию
+            }
+        }
 
         private static void sendToCollect(int pg) // функция обновления полигона в коллекции миниатюр
         {
-            List<Vector> points = normalizePoints(savePolygonPoints(polygons[pg]), 130, 130);
+            List<Vector> points = savePolygonPoints(polygons[pg]);
+            ScaleStruct scaler = VGeometry.normalizePoints(points, 130, 130); //нормализуем точки полигона для того что бы он влез в миниатюру без искажений
+            points = VGeometry.scalePoints(points, scaler);
             Polygon newPG = new Polygon();
             restorePolygonPoints(points, newPG);
-            newPG = setPolygonProperty(newPG);
+            newPG.Fill = Brushes.Gray;
+            newPG.Stroke = Brushes.Black;
+            newPG.StrokeThickness = 1;
             plgns[pg].Children.Clear();
             plgns[pg].Children.Add(newPG);
         }
@@ -126,8 +166,7 @@ namespace TestPolygons
                     return false;
                 }
                 sendToCollect(polygonId);
-                deletePair(polygonId);
-                prepareUnionPolygon(polygonId);
+                prepareUnionPolygon();
             }
             return true;
         }
@@ -150,7 +189,7 @@ namespace TestPolygons
             {
                 polygons.RemoveAt(polygonId);
                 plgns.RemoveAt(polygonId);
-                deletePair(polygonId);
+                prepareUnionPolygon();
                 return true;
             }
             else
@@ -162,32 +201,11 @@ namespace TestPolygons
                     restorePolygonPoints(points, polygons[polygonId]);
                     return false;
                 }
-                deletePair(polygonId);
                 sendToCollect(polygonId);
-                prepareUnionPolygon(polygonId);
+                prepareUnionPolygon();
                 currentPoint.Stroke = Brushes.Transparent;
             }
             return true;
-        }
-
-        private static void deletePair(int polygonId)  // функция поиска и удаления объединенного полигона из словаря
-        {
-            if (polyPolygons.ContainsKey(polygonId))
-            {
-                polyPolygons.Remove(polygonId);
-            }
-            for (int i = 0; i < polygons.Count; i++)
-            {
-                if ((int)polygons[i].Tag == polygonId)
-                {
-                    if (polyPolygons.ContainsKey((int)polygons[i].Tag))
-                    {
-                        polyPolygons.Remove((int)polygons[i].Tag);
-                        polygons[(int)polygons[i].Tag].Tag = -1;
-                    }
-                }
-            }
-            polygons[polygonId].Tag = -1;
         }
         #endregion
 
@@ -238,38 +256,13 @@ namespace TestPolygons
             else
             {
                 sendToCollect(polygonId);
-                deletePair(polygonId);
                 currentPoint = setEllipseProperty(currentPoint, p, Brushes.Red, 5); // рисуем курсорчик
             }
-            prepareUnionPolygon(polygonId);
+            prepareUnionPolygon();
 
         }
 
-        private static List<Vector> normalizePoints(List<Vector> points, int normX, int normY) // нормализация точек полигона для вписывания в миниатюру
-        {
-            double minX = double.MaxValue;
-            double maxX = double.MinValue;
-            double minY = double.MaxValue;
-            double maxY = double.MinValue;
-            for (int i = 0; i < points.Count; i++)
-            {
-                minX = (points[i].x < minX) ? points[i].x : minX;
-                minY = (points[i].y < minY) ? points[i].y : minY;
-                maxX = (points[i].x > maxX) ? points[i].x : maxX;
-                maxY = (points[i].y > maxY) ? points[i].y : maxY;
-            }
-            double scale = ((maxX - minX) > (maxY - minY)) ? normX / ((maxX - minX)) : normY / (maxY - minY);
-            double sx = ((maxX - minX) > (maxY - minY)) ? 0 : (normX - (maxX - minX) * scale) / 2;
-            double sy = ((maxX - minX) > (maxY - minY)) ? (normY - (maxY - minY) * scale) / 2 : 0;
-            for (int i = 0; i < points.Count; i++)
-            {
-                points[i].x = points[i].x - minX;
-                points[i].x = (points[i].x * scale) + sx;
-                points[i].y = points[i].y - minY;
-                points[i].y = (points[i].y * scale) + sy;
-            }
-            return points;
-        }
+        
         #endregion
 
         #region Конвертация объектов в линии и точки
@@ -371,17 +364,30 @@ namespace TestPolygons
             return r;
         }
 
+        private static int findPairPolygon(int polygonId)
+        {
+            List<VLine> linesPG1 = VGeometry.getLinesPolygon(polygons[polygonId]);
+            for (int i = 0; i < polygons.Count; i++)
+            {
+                if (i != polygonId)
+                {
+                    if ((int)polygons[i].Tag == -1)
+                    {
+                        List<VLine> linesPG2 = VGeometry.getLinesPolygon(polygons[i]);
+                        List<Vector> pList = VGeometry.getCrossPoints(linesPG1, linesPG2);
+                        if ((pList.Count - linesPG1.Count) != 0)
+                        {
+                            return i;
+                        }
+                    }
+                }
+            }
+            return -1;
+        }
+
         #endregion
 
         #region Установка свойств "по-умолчанию"
-        public static Polygon setPolygonProperty(Polygon pg)  // установка раскраски полигона "по умолчанию"
-        {
-            pg.Fill = new SolidColorBrush(Color.FromArgb(255, 127, 127, 127));
-            pg.StrokeThickness = 1;
-            pg.Stroke = Brushes.Blue;
-            return pg;
-        }
-
         private static Ellipse setEllipseProperty(Ellipse el, Vector p, Brush color, int radius) // установка раскраски эллипса "по умолчанию"
         {
             el.Width = el.Height = radius * 2;
@@ -393,7 +399,7 @@ namespace TestPolygons
         #endregion
 
         #region Подготовка и пересечение двух полигонов
-        private static void prepareUnionPolygon(int polygonId)  // Функция реализующая алгоритм расчета продукта объединения/пересечения двух полигонов
+        public static void prepareUnionPolygon()  // Функция реализующая алгоритм расчета продукта объединения/пересечения двух полигонов
         {
             //1) + Найти все точки пересечения между ребрами полигонов А и В;
             //2) + Добавить их в качестве новых вершин в оба полигона А и В;
@@ -402,48 +408,49 @@ namespace TestPolygons
             //а) + объединение: удалить из А и В все ребра помеченные как I;
             //б) + пересечение: удалить из А и В все ребра помеченные как O;
             //5) + Слить то что осталось от А и В в один результирующий полигон.
-            Polygon PG1 = polygons[polygonId];
-            int pg2index = VGeometry.findPairPolygon(polygonId, polygons);
-            if (pg2index != -1)
+
+            for (int i = 0; i < polygons.Count; i++)   // очистка коллекций
             {
-                Polygon PG2 = polygons[pg2index];
-                polygons[pg2index].Tag = polygonId;
-                polygons[polygonId].Tag = pg2index;
-                Dictionary<string, List<Vector>> pointsPoligons = VGeometry.findPointsCrossPolygons(VGeometry.getLinesPolygon(PG1), VGeometry.getLinesPolygon(PG2));
-                Polygon newPG1 = restorePolygonPoints(pointsPoligons["pg1"], new Polygon());
-                Polygon newPG2 = restorePolygonPoints(pointsPoligons["pg2"], new Polygon());
-                List<VLine> lines1 = VGeometry.getLinesPolygon(newPG1);
-                List<VLine> lines2 = VGeometry.getLinesPolygon(newPG2);
-                lines1 = VGeometry.testSidesLine(lines1, lines2);
-                lines2 = VGeometry.testSidesLine(lines2, lines1);
-                lines1 = VGeometry.deleteFlag(true, lines1);  // объединение
-                lines2 = VGeometry.deleteFlag(true, lines2);  //  
-                //lines1 = deleteFlag(false, lines1);  // пересечение
-                //lines2 = deleteFlag(false, lines2);  //
-                List<VLine> unionLines = new List<VLine>();
-                unionLines.AddRange(lines1);
-                unionLines.AddRange(lines2);
-                for (int i = 0; i < unionLines.Count; i++)
+                polygons[i].Tag = -1;
+            }
+            polyPolygons.Clear();
+            unionPolygons.Clear();
+            for (int i = 0; i < polygons.Count; i++)
+            {
+                if ((int)polygons[i].Tag == -1)
                 {
-                    unionLines[i].Stroke = Brushes.Tan;
-                    unionLines[i].StrokeThickness = 2;
-                }
-                if (!polyPolygons.ContainsKey(polygonId))
-                {
-                    if (!polyPolygons.ContainsKey(pg2index))
-                        polyPolygons.Add(pg2index, getPolyPolygon(unionLines));
-                    else
+                    Polygon PG1 = polygons[i];
+                    int pg2index = findPairPolygon(i);
+                    if (pg2index != -1)
                     {
-                        polyPolygons[pg2index] = getPolyPolygon(unionLines);
+                        Polygon PG2 = polygons[pg2index];
+                        Dictionary<string, List<Vector>> pointsPoligons = VGeometry.findPointsCrossPolygons(VGeometry.getLinesPolygon(PG1), VGeometry.getLinesPolygon(PG2));
+                        if ((pointsPoligons["pg1"].Count > 0) && (pointsPoligons["pg2"].Count > 0))
+                        {
+                            polygons[pg2index].Tag = i;
+                            polygons[i].Tag = pg2index;
+                            Polygon newPG1 = restorePolygonPoints(pointsPoligons["pg1"], new Polygon());
+                            Polygon newPG2 = restorePolygonPoints(pointsPoligons["pg2"], new Polygon());
+                            List<VLine> lines1 = VGeometry.getLinesPolygon(newPG1);
+                            List<VLine> lines2 = VGeometry.getLinesPolygon(newPG2);
+                            lines1 = VGeometry.testSidesLine(lines1, lines2);
+                            lines2 = VGeometry.testSidesLine(lines2, lines1);
+                            lines1 = VGeometry.deleteFlag(true, lines1);  // объединение
+                            lines2 = VGeometry.deleteFlag(true, lines2);  //  
+                            //lines1 = deleteFlag(false, lines1);  // пересечение
+                            //lines2 = deleteFlag(false, lines2);  //
+                            List<VLine> unionLines = new List<VLine>();
+                            unionLines.AddRange(lines1);
+                            unionLines.AddRange(lines2);
+                            List<Polygon> polyList = getPolyPolygon(unionLines);
+                            polyPolygons.Add(polyList);
+                        }
                     }
                 }
-                else
-                {
-                    polyPolygons[polygonId] = getPolyPolygon(unionLines);
-                }
             }
+            addToUnionCollect(polyPolygons);
         }
-
+        
         private static List<Polygon> getPolyPolygon(List<VLine> lines)
         {
             List<Polygon> res = new List<Polygon>();
@@ -472,9 +479,6 @@ namespace TestPolygons
                     else { flag = false; }
                 }
                 onePoly.Points = pColl;
-                onePoly.Fill = new SolidColorBrush(Color.FromArgb(127, 0, 255, 0));
-                onePoly.StrokeThickness = 1;
-                onePoly.Stroke = Brushes.Black;
                 res.Add(onePoly);
             }
             return res;

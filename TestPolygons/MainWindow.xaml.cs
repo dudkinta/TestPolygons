@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Shapes;
 
 namespace TestPolygons
@@ -22,9 +23,7 @@ namespace TestPolygons
             prepareCanvas();
             prepareToolPanel();
             prepareDBsubMenu();
-            lbCanvases.ItemsSource = null;
-            lbCanvases.Items.Clear();
-            lbCanvases.ItemsSource = Elements.plgns;
+            updateBinding();
             lbHint.Content = "Добро пожаловать в программу рисования полигонов";
         }  // инициализация
 
@@ -96,6 +95,7 @@ namespace TestPolygons
                 KeyValuePair<int, string> collect = (KeyValuePair<int, string>)mnuCollect.Tag;
                 if (InOutData.loadFromDB(collect.Key))
                 {
+                    Elements.prepareUnionPolygon();
                     refreshCanvas();
                 }
                 else
@@ -162,25 +162,46 @@ namespace TestPolygons
             prepareCanvas();
             foreach (Polygon polygon in Elements.polygons)
             {
-                canvas.Children.Add(polygon);
-            }
-            canvas.Children.Add(Elements.line);
-            canvas.Children.Add(Elements.currentPoint);
-            foreach (List<Polygon> polygons in Elements.polyPolygons.Values)
-            {
-                foreach (Polygon polygon in polygons)
+                if ((int)polygon.Tag == -1)
                 {
+                    polygon.Fill = Brushes.Gray;
+                    polygon.Stroke = Brushes.Black;
+                    polygon.StrokeThickness = 1;
                     canvas.Children.Add(polygon);
                 }
             }
+            foreach (List<Polygon> polygons in Elements.polyPolygons)
+            {
+                for (int i = 0; i < polygons.Count; i++)
+                {
+                    Polygon polygon = polygons[i];
+                    if (i == 0)
+                    {
+                        polygon.Fill = Brushes.Green;
+                    }
+                    else
+                    {
+                        polygon.Fill = Brushes.White;
+                    }
+                    polygon.Stroke = Brushes.Black;
+                    polygon.StrokeThickness = 1;
+                    canvas.Children.Add(polygon);
+                }
+            }
+            canvas.Children.Add(Elements.line);
+            canvas.Children.Add(Elements.currentPoint);
         }
 
-        private void updateBinding()
+        private void updateBinding()  // обновление привязки коллекций полигонов к UI
         {
             lbCanvases.ItemsSource = null;
             lbCanvases.Items.Clear();
             lbCanvases.ItemsSource = Elements.plgns;
-        }
+            
+            lbCanvasesUnion.ItemsSource = null;
+            lbCanvasesUnion.Items.Clear();
+            lbCanvasesUnion.ItemsSource = Elements.unionPolygons;
+        }  
 
         private void fmWPFMain_SizeChanged(object sender, SizeChangedEventArgs e) // изменение размеров окна 
         {
@@ -309,6 +330,7 @@ namespace TestPolygons
         private void mnuLoadFile_Click(object sender, RoutedEventArgs e)
         {
             InOutData.loadFromFile();
+            Elements.prepareUnionPolygon();
             refreshCanvas();
         }
 
@@ -325,7 +347,7 @@ namespace TestPolygons
             Elements.line.Points.Clear();
             Elements.polygons = new List<Polygon>();
             Elements.plgns = new ObservableCollection<Canvas>();
-            Elements.polyPolygons = new Dictionary<int, List<Polygon>>();
+            Elements.polyPolygons = new List<List<Polygon>>();
             Elements.unionPolygons = new ObservableCollection<Canvas>();
             updateBinding();
         }
