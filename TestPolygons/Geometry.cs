@@ -13,11 +13,11 @@ namespace TestPolygons
         public static bool crossPoint(VLine AB, VLine CD) // поиск точки пересечения между двумя отрезками
         {
             Vector result = new Vector();
-            double k2 = (AB.getWidth * (CD.Start.y - AB.Start.y) + AB.getHeight * (AB.Start.x - CD.Start.x)) / (AB.getHeight * CD.getWidth - AB.getWidth * CD.getHeight);
-            double a = (CD.Start.x + k2 * CD.getWidth - AB.Start.x) / AB.getWidth;
-            result.x = CD.Start.x + CD.getWidth * k2;
-            result.y = CD.Start.y + CD.getHeight * k2;
-            if (((k2 > 0) && (k2 < 1)) && ((a > 0) && (a < 1)))
+            double b = (AB.getWidth * (CD.Start.y - AB.Start.y) + AB.getHeight * (AB.Start.x - CD.Start.x)) / (AB.getHeight * CD.getWidth - AB.getWidth * CD.getHeight);
+            double a = (CD.Start.x + b * CD.getWidth - AB.Start.x) / AB.getWidth;
+            result.x = CD.Start.x + CD.getWidth * b;
+            result.y = CD.Start.y + CD.getHeight * b;
+            if (((b > 0) && (b < 1)) && ((a > 0) && (a < 1)))
             {
                 crossProduct = result;
                 return true;

@@ -179,6 +179,7 @@ namespace TestPolygons
                     canvas.Children.Add(polygon);
                 }
             }
+            // Вывод на канву объединенных полигонов как один зеленый полигон и множество белых полигонов показывающих дырки объединения.
             foreach (List<Polygon> polygons in Elements.polyPolygons)
             {
                 for (int i = 0; i < polygons.Count; i++)

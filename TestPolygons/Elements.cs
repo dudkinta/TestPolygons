@@ -328,6 +328,7 @@ namespace TestPolygons
             List<VLine> lines = VGeometry.getLinesPolygon(pg);  // разбиваем на линии и проверяем пересечение каждой линии со всеми другими в полигоне
             for (int i = 0; i < lines.Count; i++)
             {
+                
                 for (int j = 0; j < lines.Count; j++)
                 {
                     if (VGeometry.crossPoint(lines[i], lines[j])) { return true; }
