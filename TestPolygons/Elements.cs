@@ -21,6 +21,8 @@ namespace TestPolygons
             public double sy;
             public double scale;
         }
+        public static string debug = "";
+        public static List<VLine> debugLines = new List<VLine>();
 
         public static Ellipse currentPoint = new Ellipse();  // маркер выбраной точки
         public static List<Polygon> polygons = new List<Polygon>();  // коллекция полигонов

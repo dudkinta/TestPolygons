@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Windows.Media;
 using System.Windows.Shapes;
 
 namespace TestPolygons
@@ -12,6 +13,12 @@ namespace TestPolygons
 
         public static bool crossPoint(VLine AB, VLine CD) // поиск точки пересечения между двумя отрезками
         {
+            if (AB.getWidth == 0)
+            {
+                VLine l1 = AB;
+                AB = CD;
+                CD = l1;
+            }
             Vector result = new Vector();
             double b = (AB.getWidth * (CD.Start.y - AB.Start.y) + AB.getHeight * (AB.Start.x - CD.Start.x)) / (AB.getHeight * CD.getWidth - AB.getWidth * CD.getHeight);
             double a = (CD.Start.x + b * CD.getWidth - AB.Start.x) / AB.getWidth;
@@ -68,7 +75,8 @@ namespace TestPolygons
                 List<Vector> range = new List<Vector>();
                 for (int j = 0; j < pg2.Count; j++)
                 {
-                    if (crossPoint(pg1[i], pg2[j]))
+                    bool crossFlag = crossPoint(pg1[i], pg2[j]);
+                    if (crossFlag)
                     {
                         range.Add(crossProduct);
                     }
@@ -77,6 +85,13 @@ namespace TestPolygons
                 if (pg1[i].Start.x > pg1[i].End.x)
                 {
                     range.Reverse();
+                }
+                if (pg1[i].getWidth == 0)
+                {
+                    if (pg1[i].Start.y > pg1[i].End.y)
+                    {
+                        range.Reverse();
+                    }
                 }
                 points.Add(pg1[i].Start);
                 points.AddRange(range);

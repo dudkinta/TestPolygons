@@ -22,7 +22,10 @@ namespace TestPolygons
             InitializeComponent();
             prepareCanvas();
             prepareToolPanel();
-            prepareDBsubMenu();
+            mnuBD.Header = "Идет подключение к БД...";
+            mnuBD.IsEnabled = false;
+            Action action = prepareDBsubMenu;
+            action.BeginInvoke(null, null);
             updateBinding();
             lbHint.Content = "Добро пожаловать в программу рисования полигонов";
         }  
@@ -38,21 +41,26 @@ namespace TestPolygons
 
         private void prepareDBsubMenu()// подготовка меню Базы Данных. Если БД будет недоступно отключает это меню
         {
-            mnuBD.Items.Clear();
+            this.Dispatcher.Invoke(new Action(() => { mnuBD.Items.Clear(); }));
             Dictionary<int, string> bdCollect = InOutData.getCollectNamesFromDB();
-            if (bdCollect != null)
+            this.Dispatcher.Invoke(new Action(() =>
             {
-                MenuItem mnuNewItem = new MenuItem();
-                mnuNewItem.Header = "<Новый набор>";
-                mnuNewItem.Click += mnuNewCollect_Click;
-                mnuBD.Items.Add(mnuNewItem);
-                mnuBD.Items.Add(new Separator());
-                foreach (KeyValuePair<int, string> item in bdCollect)
+                if (bdCollect != null)
                 {
-                    addMenuCollectItem(item.Key, item.Value);
+
+                    MenuItem mnuNewItem = new MenuItem();
+                    mnuNewItem.Header = "<Новый набор>";
+                    mnuNewItem.Click += mnuNewCollect_Click;
+                    mnuBD.Items.Add(mnuNewItem);
+                    mnuBD.Items.Add(new Separator());
+                    foreach (KeyValuePair<int, string> item in bdCollect)
+                    {
+                        addMenuCollectItem(item.Key, item.Value);
+                    }
+                    mnuBD.IsEnabled = true; mnuBD.Header = "База данных";
                 }
-            }
-            else { mnuBD.IsEnabled = false; }
+                else { mnuBD.IsEnabled = false; mnuBD.Header = "БД недоступна"; }
+            }));
         }
 
         private void addMenuCollectItem(int id, string name)// добавление в меню БД элементов на загрузку, сохранение и удаление
@@ -169,7 +177,7 @@ namespace TestPolygons
         {
             canvas.Children.Clear();
             prepareCanvas();
-            foreach (Polygon polygon in Elements.polygons)
+            foreach (Polygon polygon in Elements.polygons) // вывод на канву полигонов без пары
             {
                 if ((int)polygon.Tag == -1)
                 {
@@ -200,6 +208,16 @@ namespace TestPolygons
             }
             canvas.Children.Add(Elements.line);
             canvas.Children.Add(Elements.currentPoint);
+            TextBlock tb = new TextBlock();
+            tb.Text = Elements.debug;
+            canvas.Children.Add(tb);
+            for (int i = 0; i < Elements.debugLines.Count; i++)
+            {
+                VLine line = Elements.debugLines[i];
+                line.Stroke = Brushes.LightBlue;
+                line.StrokeThickness = 5;
+                canvas.Children.Add(line);
+            }
         }
 
         private void updateBinding()  // обновление привязки коллекций полигонов к UI
